@@ -1,43 +1,53 @@
 package com.br;
 
-import com.br.service.ColorService;
-import com.br.service.CountryService;
+import com.br.model.User;
+import com.br.service.UserService;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
-// NOTE: final goal -> be able to use a class without manually instantiating it
 public class App {
   public static void main(String[] args) throws Exception {
-    System.out.println("Hello World!");
 
     BeansContainer container = new BeansContainer();
 
-    container.putBean(ColorService.class, new ColorService());
-    container.putBean(CountryService.class, new CountryService());
+    // here initializeClass is working like Spring's @Autowired
+    initializeClass(UserService.class, container);
+    initializeFields(container.getBean(UserService.class));
 
     for (Map.Entry<?, Object> bean : container.beans.entrySet()) {
-      // System.out.println(bean.getKey() + "/" + bean.getValue());
-      // checkIfAnnotated(bean.getValue());
-      System.out.println("loggin values before:");
-      logAnnotatedFields(bean.getValue());
-      initializeFields(bean.getValue());
-      System.out.println("loggin values after:");
-      logAnnotatedFields(bean.getValue());
+      //   // checkIfAnnotated(bean.getValue());
+      //   initializeFields(bean.getValue());
+      //   logAnnotatedFields(bean.getValue());
+      logAnnotatedClasses(bean.getValue());
     }
+
+    UserService caller = container.getBean(UserService.class);
+
+    User newUser = new User("Renan", 24);
+
+    // here im using addUser from UserService without manually instantiating it
+    caller.addUser(newUser);
+
+    System.out.println("checking added user: " + caller.getUsers().toString());
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.FIELD)
   public @interface Oblivion {
+    public String key() default "";
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface OblivionService {
     public String key() default "";
   }
 
@@ -78,20 +88,46 @@ public class App {
     }
   }
 
+  // TODO: ADD SUPPORT FOR MORE TYPES HERE
   public static void initializeFields(Object object) throws Exception {
     Class<?> clazz = object.getClass();
     Class<?> integerType = int.class;
     Class<?> boxedIntegerType = Integer.class;
     Class<?> stringType = String.class;
+    Class<?> arrayListType = ArrayList.class;
+    Class<?> listType = List.class;
+    Class<?> mapType = Map.class;
+    Class<?> objectType = Object.class;
+
     for (Field field : clazz.getDeclaredFields()) {
       field.setAccessible(true);
       if (field.isAnnotationPresent(Oblivion.class)) {
         System.out.println("Found field with OBLIVION: " + field.getName());
 
+        if (field.getType().isAssignableFrom(integerType)) {
+          field.set(object, 0);
+        }
+
+        if (field.getType().isAssignableFrom(boxedIntegerType)) {
+          field.set(object, 0);
+        }
+
         if (field.getType().isAssignableFrom(stringType)) {
           field.set(object, "Default");
         }
+
+        if (field.getType().isAssignableFrom(arrayListType)) {
+          field.set(object, new ArrayList<>());
+        }
       }
+    }
+  }
+
+  public static <T> void initializeClass(Class<T> clazz, BeansContainer container)
+      throws Exception {
+    if (clazz.isAnnotationPresent(OblivionService.class)) {
+      T init = clazz.newInstance(); // NOTE: newInstance is deprecated, gotta see other way to do it
+      container.putBean(clazz, init);
     }
   }
 
@@ -105,141 +141,15 @@ public class App {
     for (Field field : clazz.getDeclaredFields()) {
       field.setAccessible(true);
       if (field.isAnnotationPresent(Oblivion.class)) {
-        System.out.println("field: " + field.getName() + " has value: " + field.get(object));
+        System.out.println("Field: " + field.getName() + " has value: " + field.get(object));
       }
     }
   }
 
-  // from here below they all code i copied from the internet as a
-  // reference for a custom annotation implementation
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface JsonSerializable {}
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  public @interface JsonElement {
-    public String key() default "";
-  }
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.METHOD)
-  public @interface Init {} // its to instantiate stuff
-
-  @JsonSerializable
-  public static class Person {
-
-    @JsonElement private String firstName;
-
-    @JsonElement private String lastName;
-
-    @JsonElement(key = "personAge")
-    private String age;
-
-    private String address;
-
-    public Person() {}
-
-    public Person(String firstName, String lastName, String age, String address) {
-      this.firstName = firstName;
-      this.lastName = lastName;
-      this.age = age;
-      this.address = address;
-    }
-
-    @Init
-    private void initNames() {
-      this.firstName = this.firstName.substring(0, 1).toUpperCase() + this.firstName.substring(1);
-      this.lastName = this.lastName.substring(0, 1).toUpperCase() + this.lastName.substring(1);
-    }
-
-    public String getFirstName() {
-      return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-      this.firstName = firstName;
-    }
-
-    public String getLastName() {
-      return lastName;
-    }
-
-    public void setLastName(String lastName) {
-      this.lastName = lastName;
-    }
-
-    public String getAge() {
-      return age;
-    }
-
-    public void setAge(String age) {
-      this.age = age;
-    }
-
-    public String getAddress() {
-      return address;
-    }
-
-    public void setAddress(String address) {
-      this.address = address;
-    }
-  }
-
-  private static void checkIfSerializable(Object object) throws Exception {
-    if (Objects.isNull(object)) {
-      throw new Exception("The object to serialize is null");
-    }
-
+  public static void logAnnotatedClasses(Object object) throws Exception {
     Class<?> clazz = object.getClass();
-    if (!clazz.isAnnotationPresent(JsonSerializable.class)) {
-      throw new Exception(
-          "The class " + clazz.getSimpleName() + " is not annotated with JsonSerializable");
-    }
-  }
-
-  private static void initializeObject(Object object) throws Exception {
-    Class<?> clazz = object.getClass();
-    for (Method method : clazz.getDeclaredMethods()) {
-      if (method.isAnnotationPresent(Init.class)) {
-        method.setAccessible(true);
-        method.invoke(object);
-      }
-    }
-  }
-
-  private static String getJsonString(Object object) throws Exception {
-    Class<?> clazz = object.getClass();
-    Map<String, String> jsonElementsMap = new HashMap<>();
-    for (Field field : clazz.getDeclaredFields()) {
-      field.setAccessible(true);
-      if (field.isAnnotationPresent(JsonElement.class)) {
-        jsonElementsMap.put(getKey(field), (String) field.get(object));
-      }
-    }
-
-    String jsonString =
-        jsonElementsMap.entrySet().stream()
-            .map(entry -> "\"" + entry.getKey() + "\":\"" + entry.getValue() + "\"")
-            .collect(Collectors.joining(","));
-    return "{" + jsonString + "}";
-  }
-
-  private static String getKey(Field field) {
-    String value = field.getAnnotation(JsonElement.class).key();
-    return value.isEmpty() ? field.getName() : value;
-  }
-
-  public static class ObjectToJsonConverter {
-    public String convertToJson(Object object) throws Exception {
-      try {
-        checkIfSerializable(object);
-        initializeObject(object);
-        return getJsonString(object);
-      } catch (Exception ex) {
-        throw new Exception(ex.getMessage());
-      }
+    if (clazz.isAnnotationPresent(OblivionService.class)) {
+      System.out.println("Class: " + clazz.getName() + " has value: " + clazz.getDeclaredClasses());
     }
   }
 }
