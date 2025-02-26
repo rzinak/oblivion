@@ -1,0 +1,2 @@
+#!/bin/bash
+java -cp target/autowired-1.0-SNAPSHOT.jar com.br.App
