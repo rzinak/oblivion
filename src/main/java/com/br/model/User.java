@@ -1,5 +1,6 @@
 package com.br.model;
 
+
 public class User {
 
   private String name;
