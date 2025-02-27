@@ -21,7 +21,7 @@ rn classes are instantiated automatically and we can use normally
 - implement prototype beans
 
 rn beans are singleton, so i wanna add prototype beans, meaning i prob have to
-instantiate em when i retrieve them from the container.
+instantiate them when i retrieve them from the container.
 
 this will allow me to use more instances of the same instance.
 
@@ -36,7 +36,7 @@ so the goal here is to be able to use "userService" in class X, and also "userSe
 
 - field injection for dependencies
 
-this one is kinda shady, cuz i might introduce hidden dependencies that could screw things up
+this one is kinda shady, cuz it might introduce hidden dependencies that could screw things up
 
 - lifecycle callbacks
 
