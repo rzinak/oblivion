@@ -22,22 +22,35 @@ public class App {
     BeansContainer container = new BeansContainer();
 
     // here initializeClass is working like Spring's @Autowired
-    initializeClass(UserService.class, container);
-    initializeClass(TaskService.class, container);
+    initializeClass("userService", UserService.class, container);
+    initializeClass("userService2", UserService.class, container);
+    initializeClass("taskService", TaskService.class, container);
 
     for (Map.Entry<?, Object> bean : container.beans.entrySet()) {
-      //   // checkIfAnnotated(bean.getValue());
+      //   checkIfAnnotated(bean.getValue());
       //   initializeFields(bean.getValue());
       //   logAnnotatedFields(bean.getValue());
       // logAnnotatedClasses(bean.getValue());
       System.out.println("printing: " + bean.getValue());
     }
 
-    UserService userServiceCaller = container.getBean(UserService.class);
-    TaskService taskServiceCaller = container.getBean(TaskService.class);
+    // i dont know if this is the correct way to do this shit,
+    // seems like too much stuff to do... im trying to add
+    // 'beans identifier', so we can refer to a bean using
+    // different names, so we can use in different scenarios,
+    // but it means that now i have to return an object from
+    // the beans container, and when i want to use it, i need
+    // to cast the object to the type i want, like i do below
+    //
+    // it works, but idk if its the correct way to do it, might
+    // have to look into that later...
+    Object userServiceObj = container.getBean("userService");
+    Object userServiceObj2 = container.getBean("userService2");
+    Object taskServiceObj = container.getBean("taskService");
 
-    System.out.println("userServiceCaller: " + userServiceCaller);
-    System.out.println("taskServiceCaller: " + taskServiceCaller);
+    UserService userServiceCaller = UserService.class.cast(userServiceObj);
+    UserService userServiceCaller2 = UserService.class.cast(userServiceObj2);
+    TaskService taskServiceCaller = TaskService.class.cast(taskServiceObj);
 
     User userOne = new User("Renan", 24);
     User userTwo = new User("naneR", 42);
@@ -67,7 +80,7 @@ public class App {
   }
 
   public static class BeansContainer {
-    private final Map<Class<?>, Object> beans = new ConcurrentHashMap<>();
+    private final Map<String, Object> beans = new ConcurrentHashMap<>();
 
     // NOTE: here i made putBean kinda loose typed, so it allows us to
     // store anything, because i was having problems to store classes
@@ -76,14 +89,14 @@ public class App {
     // 'else' statement in the 'initializeClass', but it wasn't working.
     // to still have some type-safety, im keeping type restriction on
     // getBean
-    public <T> void putBean(Class<?> type, T bean) {
-      beans.put(type, bean);
+    public <T> void putBean(String identifier, T bean) {
+      beans.put(identifier, bean);
     }
 
-    public <T> T getBean(Class<T> type) {
-      Object bean = beans.get(type);
-      if (bean != null && type.isInstance(bean)) {
-        return type.cast(bean);
+    public Object getBean(String identifier) {
+      Object bean = beans.get(identifier);
+      if (bean != null) {
+        return bean;
       }
       return null;
     }
@@ -92,7 +105,6 @@ public class App {
       if (beans.isEmpty()) {
         return null;
       }
-
       return beans;
     }
   }
@@ -146,16 +158,17 @@ public class App {
   }
 
   // TODO: gotta add suport for instantiating multiple constructors here too
-  public static <T> void initializeClass(Class<T> clazz, BeansContainer container)
-      throws Exception {
+  public static <T> void initializeClass(
+      String identifier, Class<T> clazz, BeansContainer container) throws Exception {
     if (clazz.isAnnotationPresent(OblivionService.class)) {
       Constructor<?>[] ctors = clazz.getDeclaredConstructors();
+
       for (Constructor<?> ctor : ctors) {
         if (ctor.getParameterCount() == 0) {
           // NOTE: newInstance is deprecated, gotta see other way to do it
           T init = clazz.newInstance();
-          container.putBean(clazz, init);
-          initializeFields(container.getBean(init.getClass()));
+          container.putBean(identifier, init);
+          initializeFields(container.getBean(identifier));
         } else {
           Parameter[] params = ctor.getParameters();
 
@@ -166,11 +179,12 @@ public class App {
 
           for (Parameter p : params) {
             Class<?> paramType = p.getType();
+            String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
-            container.putBean(paramType, initParam);
-            initializeFields(container.getBean(initParam.getClass()));
+            container.putBean(paramName, initParam);
+            initializeFields(container.getBean(paramName));
             requiredParams.add(paramType);
-            requiredObjects.add(container.getBean(initParam.getClass()));
+            requiredObjects.add(container.getBean(paramName));
           }
 
           Class<?>[] requiredParamsArr = requiredParams.toArray(new Class<?>[0]);
@@ -178,8 +192,8 @@ public class App {
 
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
-          container.putBean(clazz, initClass);
-          initializeFields(container.getBean(initClass.getClass()));
+          container.putBean(identifier, initClass);
+          initializeFields(container.getBean(identifier));
         }
       }
     }
