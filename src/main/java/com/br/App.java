@@ -73,8 +73,7 @@ public class App {
     // store anything, because i was having problems to store classes
     // from inside constructors.
     // i tried casting the type before adding to the Map here, at the
-    // 'else' statement in the 'initializeClass'.
-    // but it was working.
+    // 'else' statement in the 'initializeClass', but it wasn't working.
     // to still have some type-safety, im keeping type restriction on
     // getBean
     public <T> void putBean(Class<?> type, T bean) {
