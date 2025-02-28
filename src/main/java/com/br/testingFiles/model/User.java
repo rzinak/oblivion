@@ -1,5 +1,4 @@
-package com.br.model;
-
+package com.br.testingFiles.model;
 
 public class User {
 

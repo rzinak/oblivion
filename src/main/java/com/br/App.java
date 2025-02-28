@@ -1,15 +1,14 @@
 package com.br;
 
-import com.br.model.User;
-import com.br.service.TaskService;
-import com.br.service.UserService;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.br.annotations.Oblivion;
+import com.br.annotations.OblivionPrototype;
+import com.br.annotations.OblivionService;
+import com.br.testingFiles.service.TaskService;
+import com.br.testingFiles.service.UserService;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,91 +20,136 @@ public class App {
 
     BeansContainer container = new BeansContainer();
 
-    // here initializeClass is working like Spring's @Autowired
-    initializeClass("userService", UserService.class, container);
-    initializeClass("userService2", UserService.class, container);
-    initializeClass("taskService", TaskService.class, container);
+    initializeSingletonBean("testUser", UserService.class, container);
+    initializeSingletonBean("testUser", UserService.class, container);
 
-    for (Map.Entry<?, Object> bean : container.beans.entrySet()) {
-      //   checkIfAnnotated(bean.getValue());
-      //   initializeFields(bean.getValue());
-      //   logAnnotatedFields(bean.getValue());
-      // logAnnotatedClasses(bean.getValue());
-      System.out.println("printing: " + bean.getValue());
-    }
+    registerPrototypeBean("taskProto", TaskService.class, container);
+    registerPrototypeBean("taskProto", TaskService.class, container);
 
-    // i dont know if this is the correct way to do this shit,
-    // seems like too much stuff to do... im trying to add
-    // 'beans identifier', so we can refer to a bean using
-    // different names, so we can use in different scenarios,
-    // but it means that now i have to return an object from
-    // the beans container, and when i want to use it, i need
-    // to cast the object to the type i want, like i do below
-    //
-    // it works, but idk if its the correct way to do it, might
-    // have to look into that later...
-    Object userServiceObj = container.getBean("userService");
-    Object userServiceObj2 = container.getBean("userService2");
-    Object taskServiceObj = container.getBean("taskService");
+    Object testUserObj = container.getSingletonBean("testUser");
+    Object testUserObj2 = container.getSingletonBean("testUser");
 
-    UserService userServiceCaller = UserService.class.cast(userServiceObj);
-    UserService userServiceCaller2 = UserService.class.cast(userServiceObj2);
-    TaskService taskServiceCaller = TaskService.class.cast(taskServiceObj);
+    Object protoTaskServiceObj = container.getPrototypeBean("taskProto");
+    Object protoTaskServiceObj2 = container.getPrototypeBean("taskProto");
 
-    User userOne = new User("Renan", 24);
-    User userTwo = new User("naneR", 42);
+    UserService testUser = UserService.class.cast(testUserObj);
+    UserService testUser2 = UserService.class.cast(testUserObj2);
 
-    // here im using addUser from UserService without manually instantiating it
-    userServiceCaller.addUser(userOne);
-    userServiceCaller.addUser(userTwo);
+    System.out.println("TEST USER 1: " + testUser);
+    System.out.println("TEST USER 2: " + testUser2);
 
-    // here im testing this TaskService class, it depends on UserService to work,
-    // so if it works (it does lol), it means that i implemented constructor
-    // injection too
-    taskServiceCaller.assignTaskToUser("code", userOne);
+    TaskService protoTaskService = TaskService.class.cast(protoTaskServiceObj);
+    TaskService protoTaskService2 = TaskService.class.cast(protoTaskServiceObj2);
 
-    System.out.println("checking added user: " + userServiceCaller.getUsers().toString());
-  }
+    System.out.println("PROTO TASK SERVICE 1: " + protoTaskService);
+    System.out.println("PROTO TASK SERVICE 2: " + protoTaskService2);
 
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  public @interface Oblivion {
-    public String key() default "";
-  }
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface OblivionService {
-    public String key() default "";
+    // NOTE: output will be something like:
+    // TEST USER 1: com.br.testingFiles.service.UserService@41906a77
+    // TEST USER 2: com.br.testingFiles.service.UserService@41906a77
+    // PROTO TASK SERVICE 1: com.br.testingFiles.service.TaskService@4b9af9a9
+    // PROTO TASK SERVICE 2: com.br.testingFiles.service.TaskService@5387f9e0
+    // NOTE: same identifier for a singleton means same instance, but for a
+    // prototype bean even if we are using the same identifier, we get
+    // different instances
   }
 
   public static class BeansContainer {
-    private final Map<String, Object> beans = new ConcurrentHashMap<>();
+    private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
+    private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
+    private Class<?>[] requiredParams;
+    private Object[] requiredObjects;
 
-    // NOTE: here i made putBean kinda loose typed, so it allows us to
-    // store anything, because i was having problems to store classes
-    // from inside constructors.
-    // i tried casting the type before adding to the Map here, at the
-    // 'else' statement in the 'initializeClass', but it wasn't working.
-    // to still have some type-safety, im keeping type restriction on
-    // getBean
-    public <T> void putBean(String identifier, T bean) {
-      beans.put(identifier, bean);
+    public <T> void registerSingletonBean(String identifier, T bean) {
+      singletonBeans.put(identifier, bean);
     }
 
-    public Object getBean(String identifier) {
-      Object bean = beans.get(identifier);
-      if (bean != null) {
-        return bean;
+    public <T> void registerPrototypeBean(
+        String identifier, PrototypeBeanMetadata prototypeBeanMetadata) {
+      prototypeBeans.put(identifier, prototypeBeanMetadata);
+    }
+
+    public Object getSingletonBean(String identifier) {
+      Object singletonBean = singletonBeans.get(identifier);
+      if (singletonBean != null) {
+        return singletonBean;
       }
       return null;
     }
 
-    public Map<?, Object> getAllBeans() {
-      if (beans.isEmpty()) {
+    public Object getPrototypeBean(String identifier) throws Exception {
+
+      Class<?> prototypeBeanClass = prototypeBeans.get(identifier).prototypeClass;
+      Class<?>[] requiredParams = prototypeBeans.get(identifier).requiredParams;
+      Object[] requiredObjects = prototypeBeans.get(identifier).requiredObjects;
+
+      if (prototypeBeanClass != null) {
+
+        Constructor<?>[] ctors = prototypeBeanClass.getDeclaredConstructors();
+
+        for (Constructor<?> ctor : ctors) {
+          if (ctor.getParameterCount() == 0) {
+            Object initPrototypeBean = prototypeBeanClass.newInstance();
+            initializeFields(initPrototypeBean);
+            return initPrototypeBean;
+          } else {
+            Object initPrototypeBean =
+                prototypeBeanClass
+                    .getDeclaredConstructor(requiredParams)
+                    .newInstance(requiredObjects);
+            initializeFields(initPrototypeBean);
+            return initPrototypeBean;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    public Map<?, Object> getAllSingletonBeans() {
+      if (singletonBeans.isEmpty()) {
         return null;
       }
-      return beans;
+      return singletonBeans;
+    }
+  }
+
+  public static class PrototypeBeanMetadata {
+    private Class<?> prototypeClass;
+    private Class<?>[] requiredParams;
+    private Object[] requiredObjects;
+
+    public PrototypeBeanMetadata() {}
+
+    public PrototypeBeanMetadata(
+        Class<?> prototypeClass, Class<?>[] requiredParams, Object[] requiredObjects) {
+      this.prototypeClass = prototypeClass;
+      this.requiredParams = requiredParams;
+      this.requiredObjects = requiredObjects;
+    }
+
+    public Class<?> getPrototypeClass() {
+      return prototypeClass;
+    }
+
+    public void setPrototypeClass(Class<?> prototypeClass) {
+      this.prototypeClass = prototypeClass;
+    }
+
+    public Class<?>[] getRequiredParams() {
+      return requiredParams;
+    }
+
+    public void setRequiredParams(Class<?>[] requiredParams) {
+      this.requiredParams = requiredParams;
+    }
+
+    public Object[] getRequiredObjects() {
+      return requiredObjects;
+    }
+
+    public void setRequiredObjects(Object[] requiredObjects) {
+      this.requiredObjects = requiredObjects;
     }
   }
 
@@ -136,7 +180,6 @@ public class App {
     for (Field field : clazz.getDeclaredFields()) {
       field.setAccessible(true);
       if (field.isAnnotationPresent(Oblivion.class)) {
-        System.out.println("Found field with OBLIVION: " + field.getName());
 
         if (field.getType().isAssignableFrom(integerType)) {
           field.set(object, 0);
@@ -158,7 +201,7 @@ public class App {
   }
 
   // TODO: gotta add suport for instantiating multiple constructors here too
-  public static <T> void initializeClass(
+  public static <T> void initializeSingletonBean(
       String identifier, Class<T> clazz, BeansContainer container) throws Exception {
     if (clazz.isAnnotationPresent(OblivionService.class)) {
       Constructor<?>[] ctors = clazz.getDeclaredConstructors();
@@ -167,8 +210,8 @@ public class App {
         if (ctor.getParameterCount() == 0) {
           // NOTE: newInstance is deprecated, gotta see other way to do it
           T init = clazz.newInstance();
-          container.putBean(identifier, init);
-          initializeFields(container.getBean(identifier));
+          container.registerSingletonBean(identifier, init);
+          initializeFields(container.getSingletonBean(identifier));
         } else {
           Parameter[] params = ctor.getParameters();
 
@@ -181,10 +224,10 @@ public class App {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
-            container.putBean(paramName, initParam);
-            initializeFields(container.getBean(paramName));
+            container.registerSingletonBean(paramName, initParam);
+            initializeFields(container.getSingletonBean(paramName));
             requiredParams.add(paramType);
-            requiredObjects.add(container.getBean(paramName));
+            requiredObjects.add(container.getSingletonBean(paramName));
           }
 
           Class<?>[] requiredParamsArr = requiredParams.toArray(new Class<?>[0]);
@@ -192,8 +235,57 @@ public class App {
 
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
-          container.putBean(identifier, initClass);
-          initializeFields(container.getBean(identifier));
+          container.registerSingletonBean(identifier, initClass);
+          initializeFields(container.getSingletonBean(identifier));
+        }
+      }
+    }
+  }
+
+  // TODO: it needs improvement like when we have nested annotations, but i can do that later
+  public static <T> void registerPrototypeBean(
+      String identifier, Class<T> clazz, BeansContainer container) throws Exception {
+    if (clazz.isAnnotationPresent(OblivionPrototype.class)) {
+      Constructor<?>[] ctors = clazz.getDeclaredConstructors();
+
+      PrototypeBeanMetadata prototypeBeanMetadata = new PrototypeBeanMetadata();
+
+      for (Constructor<?> ctor : ctors) {
+        if (ctor.getParameterCount() == 0) {
+          prototypeBeanMetadata.setPrototypeClass(clazz);
+          prototypeBeanMetadata.setRequiredParams(null);
+          prototypeBeanMetadata.setRequiredObjects(null);
+          container.registerPrototypeBean(identifier, prototypeBeanMetadata);
+        } else {
+          Parameter[] params = ctor.getParameters();
+
+          // required params to use inside getDeclaredConstructor
+          List<Class<?>> requiredParams = new ArrayList<>();
+          // required objects to use inside newInstance
+          List<Object> requiredObjects = new ArrayList<>();
+
+          for (Parameter p : params) {
+            Class<?> paramType = p.getType();
+            String paramName = p.getType().getName();
+            Object initParam = paramType.newInstance();
+            // even though in this method we are registering prototype beans,
+            // a dependency of a prototype bean is still a singleton
+            String customDependencyName =
+                LocalDateTime.now() + identifier + paramName + clazz.getName();
+            container.registerSingletonBean(customDependencyName, initParam);
+            initializeFields(container.getSingletonBean(customDependencyName));
+            requiredParams.add(paramType);
+            requiredObjects.add(container.getSingletonBean(customDependencyName));
+            prototypeBeanMetadata.setPrototypeClass(clazz);
+          }
+
+          Class<?>[] requiredParamsArr = requiredParams.toArray(new Class<?>[0]);
+          Object[] requiredObjectsArr = requiredObjects.toArray(new Object[0]);
+
+          prototypeBeanMetadata.setRequiredParams(requiredParamsArr);
+          prototypeBeanMetadata.setRequiredObjects(requiredObjectsArr);
+
+          container.registerPrototypeBean(identifier, prototypeBeanMetadata);
         }
       }
     }

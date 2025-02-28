@@ -1,8 +1,8 @@
-package com.br.service;
+package com.br.testingFiles.service;
 
-import com.br.App.Oblivion;
-import com.br.App.OblivionService;
-import com.br.model.User;
+import com.br.annotations.Oblivion;
+import com.br.annotations.OblivionService;
+import com.br.testingFiles.model.User;
 import java.util.List;
 
 @OblivionService
