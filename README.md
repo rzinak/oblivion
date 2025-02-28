@@ -7,6 +7,7 @@ going in-depth on how @Autowired works, so im building one myself
 - field injection
 - constructor injection (aint tweaked for multiple constructors with args yet)
 - you can give an unique name to your instance
+- prototype beans (gives us independent instances even when using the same identifier)
 
 also created two annotations to use: @Oblivion and @OblivionService.
 
@@ -14,30 +15,19 @@ also created two annotations to use: @Oblivion and @OblivionService.
 
 @OblivionService: to inject the class itself. also searches for constructors inside it, then inject them
 
+@OblivionPrototype: to create a prototype bean
+
 rn classes are instantiated automatically and we can use normally
 
 ### next goal
 
-- implement prototype beans
+- implement lifecycle callbacks
 
-rn beans are singleton, so i wanna add prototype beans, meaning i prob have to
-instantiate them when i retrieve them from the container.
+this look complex...
 
-this will allow me to use more instances of the same instance.
+basically i must find a way to manage the lifecycle of a bean, lol, simple to explain but idk about doing it
 
-example:
+for obvious reasons, for now im not going crazy like the way Spring Bean works, cuz it has many steps, both
+during creation and destruction of a bean
 
-lets say i have a "userService" bean, if i need to use this class in other two different classes,
-i would have to create a "userService2" bean for example.
-
-so the goal here is to be able to use "userService" in class X, and also "userService" in class Y.
-
-### future things i might consider doing
-
-- field injection for dependencies
-
-this one is kinda shady, cuz it might introduce hidden dependencies that could screw things up
-
-- lifecycle callbacks
-
-this i think is a must, idk
+so im thinking of simple operations for now, and making it more complex over time
