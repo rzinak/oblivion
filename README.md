@@ -9,7 +9,7 @@ going in-depth on how @Autowired works, so im building one myself
 - you can give an unique name to your instance
 - prototype beans (gives us independent instances even when using the same identifier)
 
-also created two annotations to use: @Oblivion and @OblivionService.
+also created some custom annotations to use:
 
 @Oblivion: to inject fields (need to add support for more types tho)
 
