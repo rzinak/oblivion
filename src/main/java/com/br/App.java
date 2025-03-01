@@ -1,12 +1,31 @@
+// @OblivionPostConstruct -> marks a method to be executed after the bean is fully constructed and
+//
+// dependencies are injected basically mimicking spring's init(), methods annotated with it are
+// by convention methods with no args and returns nothing - void.
+// implementation of this doesnt seem hard, just need to check of methods with this annotation
+// after registering a new bean, and just invoke the method right away.
+
+// @OblivionPreDestroy -> marks a method to be executed before the bean is destroyed
+
+// for this one the approach will be a little different, i gotta track beans with this annotation,
+// so most likely ima keep a list of them.
+// and when the application is or container is shutting down, i must iterate through the list and
+// invoke the methods annotated with @OblivionPreDestroy.
+// rn i aint have no container shutdown thing... there are 2 ways of doing it, one is a manual
+// cleanup, and the other i believe must have be related to a shutdown hook... and im def going for
+// the latter, cuz it seems more difficult lol. but i need to understand shutdown hooks more in
+// depth before doing it
+
 package com.br;
 
 import com.br.annotations.Oblivion;
+import com.br.annotations.OblivionPostConstruct;
 import com.br.annotations.OblivionPrototype;
 import com.br.annotations.OblivionService;
-import com.br.testingFiles.service.TaskService;
 import com.br.testingFiles.service.UserService;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,37 +40,9 @@ public class App {
     BeansContainer container = new BeansContainer();
 
     initializeSingletonBean("testUser", UserService.class, container);
-    initializeSingletonBean("testUser", UserService.class, container);
-
-    registerPrototypeBean("taskProto", TaskService.class, container);
-    registerPrototypeBean("taskProto", TaskService.class, container);
-
     Object testUserObj = container.getSingletonBean("testUser");
-    Object testUserObj2 = container.getSingletonBean("testUser");
-
-    Object protoTaskServiceObj = container.getPrototypeBean("taskProto");
-    Object protoTaskServiceObj2 = container.getPrototypeBean("taskProto");
-
     UserService testUser = UserService.class.cast(testUserObj);
-    UserService testUser2 = UserService.class.cast(testUserObj2);
-
     System.out.println("TEST USER 1: " + testUser);
-    System.out.println("TEST USER 2: " + testUser2);
-
-    TaskService protoTaskService = TaskService.class.cast(protoTaskServiceObj);
-    TaskService protoTaskService2 = TaskService.class.cast(protoTaskServiceObj2);
-
-    System.out.println("PROTO TASK SERVICE 1: " + protoTaskService);
-    System.out.println("PROTO TASK SERVICE 2: " + protoTaskService2);
-
-    // NOTE: output will be something like:
-    // TEST USER 1: com.br.testingFiles.service.UserService@41906a77
-    // TEST USER 2: com.br.testingFiles.service.UserService@41906a77
-    // PROTO TASK SERVICE 1: com.br.testingFiles.service.TaskService@4b9af9a9
-    // PROTO TASK SERVICE 2: com.br.testingFiles.service.TaskService@5387f9e0
-    // NOTE: same identifier for a singleton means same instance, but for a
-    // prototype bean even if we are using the same identifier, we get
-    // different instances
   }
 
   public static class BeansContainer {
@@ -179,8 +170,8 @@ public class App {
 
     for (Field field : clazz.getDeclaredFields()) {
       field.setAccessible(true);
+      System.out.println("field name: " + field.getName());
       if (field.isAnnotationPresent(Oblivion.class)) {
-
         if (field.getType().isAssignableFrom(integerType)) {
           field.set(object, 0);
         }
@@ -195,6 +186,16 @@ public class App {
 
         if (field.getType().isAssignableFrom(arrayListType)) {
           field.set(object, new ArrayList<>());
+        }
+      }
+    }
+
+    // NOTE: because by convention post construct invocations occur only
+    // on void methods and with no args, im doing the same here
+    for (Method method : clazz.getDeclaredMethods()) {
+      if (method.isAnnotationPresent(OblivionPostConstruct.class)) {
+        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
+          method.invoke(object);
         }
       }
     }
