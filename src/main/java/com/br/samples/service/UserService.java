@@ -3,6 +3,7 @@ package com.br.samples.service;
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPreDestroy;
+import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
 import com.br.autowired.annotations.OblivionService;
 import com.br.samples.model.User;
@@ -23,6 +24,11 @@ public class UserService {
   @OblivionPostConstruct
   public void hello() {
     System.out.println("hello");
+  }
+
+  @OblivionPreInitialization
+  public void preInit() {
+    System.out.println("running before the bean in fully initialized\nbefore DI and field init");
   }
 
   @OblivionPreDestroy

@@ -3,6 +3,7 @@ package com.br.autowired.util;
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPreDestroy;
+import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
 import com.br.autowired.annotations.OblivionService;
 import com.br.autowired.container.BeansContainer;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ReflectionUtils {
   public static void checkIfAnnotated(Object object) throws Exception {
@@ -28,6 +30,8 @@ public class ReflectionUtils {
   }
 
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
+  // NOTE: as this method grows, it makes sense to split this into different methods, for example,
+  // different methods to inject primitives, non-primitive fields, etc...
   public static void initializeFieldsAndMethods(Object instantiatedClass, BeansContainer container)
       throws Exception {
     Class<?> clazz = instantiatedClass.getClass();
@@ -70,6 +74,12 @@ public class ReflectionUtils {
         }
       }
 
+      if (method.isAnnotationPresent(OblivionPreInitialization.class)) {
+        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
+          method.invoke(instantiatedClass);
+        }
+      }
+
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           container.registerPreDestroyMethods(instantiatedClass, method);
@@ -84,15 +94,32 @@ public class ReflectionUtils {
     }
   }
 
+  public static void runPreInitializationMethods(Method[] methods, Object objectToRun)
+      throws Exception {
+    if (objectToRun != null && methods != null) {
+      Stream.of(methods)
+          .filter(m -> m.isAnnotationPresent(OblivionPreInitialization.class))
+          .filter(m -> m.getParameters().length == 0)
+          .filter(m -> m.getReturnType().equals(Void.TYPE))
+          .forEach(
+              m -> {
+                try {
+                  m.invoke(objectToRun);
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              });
+    }
+  }
+
   // NOTE: objectToRun here is the class where the method is
-  public static void runPreDestroyMethods(Object objectToRun, Method methodToRun) throws Exception {
+  public static void runPreDestroyMethod(Object objectToRun, Method methodToRun) throws Exception {
     if (objectToRun != null && objectToRun != null) {
       methodToRun.invoke(objectToRun);
     }
   }
 
-  public static void runPreShutdownMethods(Object objectToRun, Method methodToRun)
-      throws Exception {
+  public static void runPreShutdownMethod(Object objectToRun, Method methodToRun) throws Exception {
     if (objectToRun != null && objectToRun != null) {
       methodToRun.invoke(objectToRun);
     }

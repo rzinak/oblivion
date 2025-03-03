@@ -14,7 +14,7 @@ public class Shutdown {
               public void run() {
                 for (Map.Entry<Object, Method> entry : container.getPreDestroyMethods()) {
                   try {
-                    ReflectionUtils.runPreDestroyMethods(entry.getKey(), entry.getValue());
+                    ReflectionUtils.runPreDestroyMethod(entry.getKey(), entry.getValue());
                   } catch (Exception ex) {
                     ex.printStackTrace();
                   }
@@ -22,7 +22,7 @@ public class Shutdown {
 
                 for (Map.Entry<Object, Method> entry : container.getPreShutdownMethods()) {
                   try {
-                    ReflectionUtils.runPreShutdownMethods(entry.getKey(), entry.getValue());
+                    ReflectionUtils.runPreShutdownMethod(entry.getKey(), entry.getValue());
                   } catch (Exception ex) {
                     ex.printStackTrace();
                   }
