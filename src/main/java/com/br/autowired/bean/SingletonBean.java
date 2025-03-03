@@ -16,6 +16,8 @@ public class SingletonBean {
     if (clazz.isAnnotationPresent(OblivionService.class)) {
       Constructor<?>[] ctors = clazz.getDeclaredConstructors();
 
+      ReflectionUtils.runPreInitializationMethods(clazz);
+
       for (Constructor<?> ctor : ctors) {
         if (ctor.getParameterCount() == 0) {
           // NOTE: newInstance is deprecated, gotta see other way to do it

@@ -27,8 +27,8 @@ public class UserService {
   }
 
   @OblivionPreInitialization
-  public void preInit() {
-    System.out.println("running before the bean in fully initialized\nbefore DI and field init");
+  public static void preInit() {
+    System.out.println("running before the bean in fully initialized and before DI and field init");
   }
 
   @OblivionPreDestroy

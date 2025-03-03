@@ -9,6 +9,7 @@ import com.br.autowired.annotations.OblivionService;
 import com.br.autowired.container.BeansContainer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -74,12 +75,6 @@ public class ReflectionUtils {
         }
       }
 
-      if (method.isAnnotationPresent(OblivionPreInitialization.class)) {
-        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          method.invoke(instantiatedClass);
-        }
-      }
-
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           container.registerPreDestroyMethods(instantiatedClass, method);
@@ -94,17 +89,21 @@ public class ReflectionUtils {
     }
   }
 
-  public static void runPreInitializationMethods(Method[] methods, Object objectToRun)
-      throws Exception {
-    if (objectToRun != null && methods != null) {
+  // NOTE: @OblivionPreInitialization should be a static method
+  public static void runPreInitializationMethods(Class<?> clazz) throws Exception {
+    if (clazz != null) {
+      Method[] methods = clazz.getDeclaredMethods();
       Stream.of(methods)
+          .filter(m -> Modifier.isStatic(m.getModifiers()))
           .filter(m -> m.isAnnotationPresent(OblivionPreInitialization.class))
           .filter(m -> m.getParameters().length == 0)
           .filter(m -> m.getReturnType().equals(Void.TYPE))
           .forEach(
               m -> {
                 try {
-                  m.invoke(objectToRun);
+                  // since its static, we pass null because static methods
+                  // belong to the class itself and not to any particular instance
+                  m.invoke(null);
                 } catch (Exception ex) {
                   ex.printStackTrace();
                 }

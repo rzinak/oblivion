@@ -19,6 +19,8 @@ public class PrototypeBean {
 
       PrototypeBeanMetadata prototypeBeanMetadata = new PrototypeBeanMetadata();
 
+      ReflectionUtils.runPreInitializationMethods(clazz);
+
       for (Constructor<?> ctor : ctors) {
         if (ctor.getParameterCount() == 0) {
           prototypeBeanMetadata.setPrototypeClass(clazz);
