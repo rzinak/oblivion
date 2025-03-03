@@ -2,6 +2,7 @@ package com.br.testingFiles.service;
 
 import com.br.annotations.Oblivion;
 import com.br.annotations.OblivionPostConstruct;
+import com.br.annotations.OblivionPreDestroy;
 import com.br.annotations.OblivionService;
 import com.br.testingFiles.model.User;
 import java.util.List;
@@ -19,8 +20,13 @@ public class UserService {
   }
 
   @OblivionPostConstruct
-  public void yo() {
-    System.out.println("yo");
+  public void hello() {
+    System.out.println("hello");
+  }
+
+  @OblivionPreDestroy
+  public void bye() {
+    System.out.println("bye");
   }
 
   public List<User> getUsers() {

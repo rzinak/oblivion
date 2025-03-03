@@ -20,6 +20,7 @@ package com.br;
 
 import com.br.annotations.Oblivion;
 import com.br.annotations.OblivionPostConstruct;
+import com.br.annotations.OblivionPreDestroy;
 import com.br.annotations.OblivionPrototype;
 import com.br.annotations.OblivionService;
 import com.br.testingFiles.service.UserService;
@@ -35,21 +36,44 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class App {
+  public static class Shutdown {
+    public void attachShutdown(BeansContainer container) {
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread() {
+                @Override
+                public void run() {
+                  for (Map.Entry<Object, Method> entry : container.preDestroyMethods.entrySet()) {
+                    try {
+                      entry.getValue().invoke(entry.getKey());
+                    } catch (Exception ex) {
+                      ex.printStackTrace();
+                    }
+                  }
+                }
+              });
+    }
+  }
+
   public static void main(String[] args) throws Exception {
-
+    Shutdown shutdownHook = new Shutdown();
     BeansContainer container = new BeansContainer();
-
-    initializeSingletonBean("testUser", UserService.class, container);
-    Object testUserObj = container.getSingletonBean("testUser");
-    UserService testUser = UserService.class.cast(testUserObj);
-    System.out.println("TEST USER 1: " + testUser);
+    shutdownHook.attachShutdown(container);
+    try {
+      initializeSingletonBean("testUser", UserService.class, container);
+      Object testUserObj = container.getSingletonBean("testUser");
+      UserService testUser = UserService.class.cast(testUserObj);
+      System.out.println("TEST USER 1: " + testUser);
+    } catch (InterruptedException ex) {
+      ex.printStackTrace();
+    }
   }
 
   public static class BeansContainer {
     private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
     private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
-    private Class<?>[] requiredParams;
-    private Object[] requiredObjects;
+    // methods annotated with @PreDestroy
+    private Map<Object, Method> preDestroyMethods = new ConcurrentHashMap<>();
 
     public <T> void registerSingletonBean(String identifier, T bean) {
       singletonBeans.put(identifier, bean);
@@ -81,20 +105,24 @@ public class App {
         for (Constructor<?> ctor : ctors) {
           if (ctor.getParameterCount() == 0) {
             Object initPrototypeBean = prototypeBeanClass.newInstance();
-            initializeFields(initPrototypeBean);
+            initializeFields(initPrototypeBean, null);
             return initPrototypeBean;
           } else {
             Object initPrototypeBean =
                 prototypeBeanClass
                     .getDeclaredConstructor(requiredParams)
                     .newInstance(requiredObjects);
-            initializeFields(initPrototypeBean);
+            initializeFields(initPrototypeBean, null);
             return initPrototypeBean;
           }
         }
       }
 
       return null;
+    }
+
+    public void registerPreDestroyMethods(Object instantiatedClass, Method method) {
+      preDestroyMethods.put(instantiatedClass, method);
     }
 
     public Map<?, Object> getAllSingletonBeans() {
@@ -158,8 +186,10 @@ public class App {
   }
 
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
-  public static void initializeFields(Object object) throws Exception {
-    Class<?> clazz = object.getClass();
+  // TODO: RENAME THIS SHIT TOO, IT ALSO WORK WITH @PREDESTROY AND @POSTCONSTRUCT
+  public static void initializeFields(Object instantiatedClass, BeansContainer container)
+      throws Exception {
+    Class<?> clazz = instantiatedClass.getClass();
     Class<?> integerType = int.class;
     Class<?> boxedIntegerType = Integer.class;
     Class<?> stringType = String.class;
@@ -173,19 +203,19 @@ public class App {
       System.out.println("field name: " + field.getName());
       if (field.isAnnotationPresent(Oblivion.class)) {
         if (field.getType().isAssignableFrom(integerType)) {
-          field.set(object, 0);
+          field.set(instantiatedClass, 0);
         }
 
         if (field.getType().isAssignableFrom(boxedIntegerType)) {
-          field.set(object, 0);
+          field.set(instantiatedClass, 0);
         }
 
         if (field.getType().isAssignableFrom(stringType)) {
-          field.set(object, "Default");
+          field.set(instantiatedClass, "Default");
         }
 
         if (field.getType().isAssignableFrom(arrayListType)) {
-          field.set(object, new ArrayList<>());
+          field.set(instantiatedClass, new ArrayList<>());
         }
       }
     }
@@ -195,9 +225,24 @@ public class App {
     for (Method method : clazz.getDeclaredMethods()) {
       if (method.isAnnotationPresent(OblivionPostConstruct.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          method.invoke(object);
+          method.invoke(instantiatedClass);
         }
       }
+
+      if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
+        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
+          container.registerPreDestroyMethods(instantiatedClass, method);
+        }
+      }
+    }
+  }
+
+  // TODO: gotta call methods annotated with @PreDestroy here
+  // NOTE: i store them in a separated map
+  // NOTE: objectToRun here is the class where the method is
+  public static void runPreDestroyMethods(Object objectToRun, Method methodToRun) throws Exception {
+    if (objectToRun != null && objectToRun != null) {
+      methodToRun.invoke(objectToRun);
     }
   }
 
@@ -212,7 +257,7 @@ public class App {
           // NOTE: newInstance is deprecated, gotta see other way to do it
           T init = clazz.newInstance();
           container.registerSingletonBean(identifier, init);
-          initializeFields(container.getSingletonBean(identifier));
+          initializeFields(container.getSingletonBean(identifier), container);
         } else {
           Parameter[] params = ctor.getParameters();
 
@@ -226,7 +271,7 @@ public class App {
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
             container.registerSingletonBean(paramName, initParam);
-            initializeFields(container.getSingletonBean(paramName));
+            initializeFields(container.getSingletonBean(paramName), container);
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(paramName));
           }
@@ -237,7 +282,7 @@ public class App {
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
           container.registerSingletonBean(identifier, initClass);
-          initializeFields(container.getSingletonBean(identifier));
+          initializeFields(container.getSingletonBean(identifier), container);
         }
       }
     }
@@ -274,7 +319,7 @@ public class App {
             String customDependencyName =
                 LocalDateTime.now() + identifier + paramName + clazz.getName();
             container.registerSingletonBean(customDependencyName, initParam);
-            initializeFields(container.getSingletonBean(customDependencyName));
+            initializeFields(container.getSingletonBean(customDependencyName), container);
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(customDependencyName));
             prototypeBeanMetadata.setPrototypeClass(clazz);
