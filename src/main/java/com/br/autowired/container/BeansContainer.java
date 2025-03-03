@@ -32,7 +32,7 @@ public class BeansContainer {
     return null;
   }
 
-  public Object getPrototypeBean(String identifier) throws Exception {
+  public Object getPrototypeBean(String identifier, BeansContainer container) throws Exception {
     Class<?> prototypeBeanClass = prototypeBeans.get(identifier).getPrototypeClass();
     Class<?>[] requiredParams = prototypeBeans.get(identifier).getRequiredParams();
     Object[] requiredObjects = prototypeBeans.get(identifier).getRequiredObjects();
@@ -44,14 +44,22 @@ public class BeansContainer {
       for (Constructor<?> ctor : ctors) {
         if (ctor.getParameterCount() == 0) {
           Object initPrototypeBean = prototypeBeanClass.newInstance();
-          ReflectionUtils.initializeFieldsAndMethods(initPrototypeBean, null);
+          ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
+          ReflectionUtils.initializeFields(initPrototypeBean);
+          ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
+          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(
+              prototypeBeanClass, initPrototypeBean, container);
           return initPrototypeBean;
         } else {
           Object initPrototypeBean =
               prototypeBeanClass
                   .getDeclaredConstructor(requiredParams)
                   .newInstance(requiredObjects);
-          ReflectionUtils.initializeFieldsAndMethods(initPrototypeBean, null);
+          ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
+          ReflectionUtils.initializeFields(initPrototypeBean);
+          ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
+          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(
+              prototypeBeanClass, initPrototypeBean, container);
           return initPrototypeBean;
         }
       }

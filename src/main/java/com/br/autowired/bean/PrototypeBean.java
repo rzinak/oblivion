@@ -44,8 +44,7 @@ public class PrototypeBean {
             String customDependencyName =
                 LocalDateTime.now() + identifier + paramName + clazz.getName();
             container.registerSingletonBean(customDependencyName, initParam);
-            ReflectionUtils.initializeFieldsAndMethods(
-                container.getSingletonBean(customDependencyName), container);
+            ReflectionUtils.initializeFields(container.getSingletonBean(customDependencyName));
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(customDependencyName));
             prototypeBeanMetadata.setPrototypeClass(clazz);

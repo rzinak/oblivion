@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SingletonBean {
-
   // TODO: gotta add suport for instantiating multiple constructors here too
   public <T> void initializeSingletonBean(
       String identifier, Class<T> clazz, BeansContainer container) throws Exception {
@@ -22,9 +21,12 @@ public class SingletonBean {
         if (ctor.getParameterCount() == 0) {
           // NOTE: newInstance is deprecated, gotta see other way to do it
           T init = clazz.newInstance();
+          ReflectionUtils.runPostConstrucMethods(clazz, init);
           container.registerSingletonBean(identifier, init);
-          ReflectionUtils.initializeFieldsAndMethods(
-              container.getSingletonBean(identifier), container);
+          ReflectionUtils.initializeFields(container.getSingletonBean(identifier));
+          ReflectionUtils.runPostInitializaionMethods(clazz, init);
+          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(clazz, init, container);
+
         } else {
           Parameter[] params = ctor.getParameters();
 
@@ -37,9 +39,9 @@ public class SingletonBean {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
+            ReflectionUtils.runPostConstrucMethods(clazz, initParam);
             container.registerSingletonBean(paramName, initParam);
-            ReflectionUtils.initializeFieldsAndMethods(
-                container.getSingletonBean(paramName), container);
+            ReflectionUtils.initializeFields(container.getSingletonBean(paramName));
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(paramName));
           }
@@ -50,8 +52,10 @@ public class SingletonBean {
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
           container.registerSingletonBean(identifier, initClass);
-          ReflectionUtils.initializeFieldsAndMethods(
-              container.getSingletonBean(identifier), container);
+          ReflectionUtils.runPostConstrucMethods(clazz, initClass);
+          ReflectionUtils.initializeFields(container.getSingletonBean(identifier));
+          ReflectionUtils.runPostInitializaionMethods(clazz, initClass);
+          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(clazz, initClass, container);
         }
       }
     }

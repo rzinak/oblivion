@@ -16,7 +16,13 @@ also created some custom annotations to use:
 
 @OblivionPrototype: to create a prototype bean
 
-@OblivionPostConstruct: marks a method to be executed after the bean is fully constructed
+@OblivionPreInitialization: marks a method to be executed before the bean is fully initialized, it's ran even before field initializations
+
+@OblivionPostConstruct: marks a method to be executed immediately after its dependencies are injected.
+good for basic setup that depend on injected dependencies
+
+@OblivionPostInitialization: marks a method to be executed after the bean is fully initialized.
+good for advanced setups that require the bean to be fully ready, like starting a background thread for example.
 
 @OblivionPreDestroy: marks a method to be executed before the bean is destroyed
 
@@ -40,11 +46,11 @@ so im thinking of simple operations for now, and making it more complex over tim
 @OblivionPostConstruct
 @OblivionPreDestroy
 @OblivionPreShutdown
+@OblivionPreInitialization
+@OblivionPostInitialization
 
 **lifecycle phases to add**
 
-@OblivionPreInitialization
-@OblivionPostInitialization
 @OblivionPostShutdown
 
 **other cool things to implement**

@@ -2,6 +2,7 @@ package com.br.autowired.util;
 
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
+import com.br.autowired.annotations.OblivionPostInitialization;
 import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
@@ -31,10 +32,7 @@ public class ReflectionUtils {
   }
 
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
-  // NOTE: as this method grows, it makes sense to split this into different methods, for example,
-  // different methods to inject primitives, non-primitive fields, etc...
-  public static void initializeFieldsAndMethods(Object instantiatedClass, BeansContainer container)
-      throws Exception {
+  public static void initializeFields(Object instantiatedClass) throws Exception {
     Class<?> clazz = instantiatedClass.getClass();
     Class<?> integerType = int.class;
     Class<?> boxedIntegerType = Integer.class;
@@ -46,7 +44,6 @@ public class ReflectionUtils {
 
     for (Field field : clazz.getDeclaredFields()) {
       field.setAccessible(true);
-      System.out.println("field name: " + field.getName());
       if (field.isAnnotationPresent(Oblivion.class)) {
         if (field.getType().isAssignableFrom(integerType)) {
           field.set(instantiatedClass, 0);
@@ -65,25 +62,20 @@ public class ReflectionUtils {
         }
       }
     }
+  }
 
-    // NOTE: because by convention post construct invocations occur only
-    // on void methods and with no args, im doing the same here
+  public static void registerPreDestroyAndPreShutdownMethods(
+      Class<?> clazz, Object objectToRun, BeansContainer container) throws Exception {
     for (Method method : clazz.getDeclaredMethods()) {
-      if (method.isAnnotationPresent(OblivionPostConstruct.class)) {
-        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          method.invoke(instantiatedClass);
-        }
-      }
-
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          container.registerPreDestroyMethods(instantiatedClass, method);
+          container.registerPreDestroyMethods(objectToRun, method);
         }
       }
 
       if (method.isAnnotationPresent(OblivionPreShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          container.registerPreShutdownMethods(instantiatedClass, method);
+          container.registerPreShutdownMethods(objectToRun, method);
         }
       }
     }
@@ -104,6 +96,43 @@ public class ReflectionUtils {
                   // since its static, we pass null because static methods
                   // belong to the class itself and not to any particular instance
                   m.invoke(null);
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              });
+    }
+  }
+
+  public static void runPostConstrucMethods(Class<?> clazz, Object objectToRun) throws Exception {
+    if (clazz != null) {
+      Method[] methods = clazz.getDeclaredMethods();
+      Stream.of(methods)
+          .filter(m -> m.isAnnotationPresent(OblivionPostConstruct.class))
+          .filter(m -> m.getParameters().length == 0)
+          .filter(m -> m.getReturnType().equals(Void.TYPE))
+          .forEach(
+              m -> {
+                try {
+                  m.invoke(objectToRun);
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              });
+    }
+  }
+
+  public static void runPostInitializaionMethods(Class<?> clazz, Object objectToRun)
+      throws Exception {
+    if (clazz != null) {
+      Method[] methods = clazz.getDeclaredMethods();
+      Stream.of(methods)
+          .filter(m -> m.isAnnotationPresent(OblivionPostInitialization.class))
+          .filter(m -> m.getParameters().length == 0)
+          .filter(m -> m.getReturnType().equals(Void.TYPE))
+          .forEach(
+              m -> {
+                try {
+                  m.invoke(objectToRun);
                 } catch (Exception ex) {
                   ex.printStackTrace();
                 }

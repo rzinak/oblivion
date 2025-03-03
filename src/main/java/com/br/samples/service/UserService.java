@@ -2,6 +2,7 @@ package com.br.samples.service;
 
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
+import com.br.autowired.annotations.OblivionPostInitialization;
 import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
@@ -22,23 +23,32 @@ public class UserService {
   }
 
   @OblivionPostConstruct
-  public void hello() {
-    System.out.println("hello");
+  public void postConstruct() {
+    System.out.println(
+        "PostConstruct - running after bean is instantiated and its dependencies are injected");
   }
 
   @OblivionPreInitialization
   public static void preInit() {
-    System.out.println("running before the bean in fully initialized and before DI and field init");
+    System.out.println(
+        "PreInitialization - running before the bean is fully initialized, before DI and field init"
+            + " as well");
+  }
+
+  @OblivionPostInitialization
+  public static void postInit() {
+    System.out.println(
+        "PostInitialization - running after the bean in fully initialized and its fully ready");
   }
 
   @OblivionPreDestroy
   public void preDestroy() {
-    System.out.println("im running before the PreShutdown phase");
+    System.out.println("PreDestroy - im running before the PreShutdown phase");
   }
 
   @OblivionPreShutdown
   public void preShutdown() {
-    System.out.println("im running before the container is shutdown");
+    System.out.println("PreShutdown - im running before the container is shutdown");
   }
 
   public List<User> getUsers() {
