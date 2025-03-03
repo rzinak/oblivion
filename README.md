@@ -20,6 +20,8 @@ also created some custom annotations to use:
 
 @OblivionPreDestroy: marks a method to be executed before the bean is destroyed
 
+@OblivionPreShutdown: marks a method to be executed before the container is shutdown 
+
 rn classes are instantiated automatically and we can use normally
 
 ### next goal
@@ -33,6 +35,54 @@ during creation and destruction of a bean
 
 so im thinking of simple operations for now, and making it more complex over time
 
+**lifecycle phases i added**
+
+@OblivionPostConstruct
+@OblivionPreDestroy
+@OblivionPreShutdown
+
+**lifecycle phases to add**
+
+@OblivionPreInitialization
+@OblivionPostInitialization
+@OblivionPostShutdown
+
+**other cool things to implement**
+
+*conditional lifecycle methods*: i belive this involves adding attributes to lifecycle annotations,
+like running a method only if a property is set, or only if a particular bean is present in the container
+
+`@OblivionPostConstruct(cond = "env.prod")`
+
+basically before invoking the method i must evaluate the condition
+
+*async lifecycle methods*: it would be cool to allow methods to run asynchronously, its good for performing
+long-running initializations or cleanup tasks without blocking the main thread. and it would also improve performance
+by parallelizing lifecycle tasks (i believe this feature is a must in case this project grows considerably)
+
+i believe that it can be implement similar to the idea above, by adding an attribute to the lifecycle, since adding
+a custom @Async annotation will probably make it look like its related to the DI itself and not the lifecycle.
+
+`@OblivionPostConstruct(async = true)`
+
+can use a thread pool to invoke them
+
+*ordered lifecycle methods*: this is some cool thing i was thinking, like ordering lifecycle calls
+
+lets say i have these two annotations:
+
+`@OblivionPostConstruct(order = 1)`
+`@OblivionPostConstruct(async = 2)`
+
+this way we have more control on when things are running
+
+to implement this gotta sort them by their order before invoking
+
+*custom lifecycles*: maybe i can allow users to define their own custom lifecycle phases, by allowing them to
+register custom lifecycle annotations.
+
+aint think of a way to do this yet
+
 ### other things to do
 
 - better error handling
@@ -41,3 +91,5 @@ so im thinking of simple operations for now, and making it more complex over tim
 
 - for scalability, i will prob have to enhance the clean up logic for @PreDestroy, and other similar annotations, for example handling circular dependencies, and maybe
 (a big maybe) add support to a custom cleanup phase
+
+- redo this readme
