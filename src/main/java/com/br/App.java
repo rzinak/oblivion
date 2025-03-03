@@ -1,21 +1,3 @@
-// @OblivionPostConstruct -> marks a method to be executed after the bean is fully constructed and
-//
-// dependencies are injected basically mimicking spring's init(), methods annotated with it are
-// by convention methods with no args and returns nothing - void.
-// implementation of this doesnt seem hard, just need to check of methods with this annotation
-// after registering a new bean, and just invoke the method right away.
-
-// @OblivionPreDestroy -> marks a method to be executed before the bean is destroyed
-
-// for this one the approach will be a little different, i gotta track beans with this annotation,
-// so most likely ima keep a list of them.
-// and when the application is or container is shutting down, i must iterate through the list and
-// invoke the methods annotated with @OblivionPreDestroy.
-// rn i aint have no container shutdown thing... there are 2 ways of doing it, one is a manual
-// cleanup, and the other i believe must have be related to a shutdown hook... and im def going for
-// the latter, cuz it seems more difficult lol. but i need to understand shutdown hooks more in
-// depth before doing it
-
 package com.br;
 
 import com.br.annotations.Oblivion;
@@ -45,11 +27,14 @@ public class App {
                 public void run() {
                   for (Map.Entry<Object, Method> entry : container.preDestroyMethods.entrySet()) {
                     try {
-                      entry.getValue().invoke(entry.getKey());
+                      runPreDestroyMethods(entry.getKey(), entry.getValue());
                     } catch (Exception ex) {
                       ex.printStackTrace();
                     }
                   }
+                  container.preDestroyMethods.clear();
+                  container.singletonBeans.clear();
+                  container.prototypeBeans.clear();
                 }
               });
     }
@@ -105,14 +90,14 @@ public class App {
         for (Constructor<?> ctor : ctors) {
           if (ctor.getParameterCount() == 0) {
             Object initPrototypeBean = prototypeBeanClass.newInstance();
-            initializeFields(initPrototypeBean, null);
+            initializeFieldsAndMethods(initPrototypeBean, null);
             return initPrototypeBean;
           } else {
             Object initPrototypeBean =
                 prototypeBeanClass
                     .getDeclaredConstructor(requiredParams)
                     .newInstance(requiredObjects);
-            initializeFields(initPrototypeBean, null);
+            initializeFieldsAndMethods(initPrototypeBean, null);
             return initPrototypeBean;
           }
         }
@@ -186,8 +171,7 @@ public class App {
   }
 
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
-  // TODO: RENAME THIS SHIT TOO, IT ALSO WORK WITH @PREDESTROY AND @POSTCONSTRUCT
-  public static void initializeFields(Object instantiatedClass, BeansContainer container)
+  public static void initializeFieldsAndMethods(Object instantiatedClass, BeansContainer container)
       throws Exception {
     Class<?> clazz = instantiatedClass.getClass();
     Class<?> integerType = int.class;
@@ -237,8 +221,6 @@ public class App {
     }
   }
 
-  // TODO: gotta call methods annotated with @PreDestroy here
-  // NOTE: i store them in a separated map
   // NOTE: objectToRun here is the class where the method is
   public static void runPreDestroyMethods(Object objectToRun, Method methodToRun) throws Exception {
     if (objectToRun != null && objectToRun != null) {
@@ -257,7 +239,7 @@ public class App {
           // NOTE: newInstance is deprecated, gotta see other way to do it
           T init = clazz.newInstance();
           container.registerSingletonBean(identifier, init);
-          initializeFields(container.getSingletonBean(identifier), container);
+          initializeFieldsAndMethods(container.getSingletonBean(identifier), container);
         } else {
           Parameter[] params = ctor.getParameters();
 
@@ -271,7 +253,7 @@ public class App {
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
             container.registerSingletonBean(paramName, initParam);
-            initializeFields(container.getSingletonBean(paramName), container);
+            initializeFieldsAndMethods(container.getSingletonBean(paramName), container);
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(paramName));
           }
@@ -282,7 +264,7 @@ public class App {
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
           container.registerSingletonBean(identifier, initClass);
-          initializeFields(container.getSingletonBean(identifier), container);
+          initializeFieldsAndMethods(container.getSingletonBean(identifier), container);
         }
       }
     }
@@ -319,7 +301,7 @@ public class App {
             String customDependencyName =
                 LocalDateTime.now() + identifier + paramName + clazz.getName();
             container.registerSingletonBean(customDependencyName, initParam);
-            initializeFields(container.getSingletonBean(customDependencyName), container);
+            initializeFieldsAndMethods(container.getSingletonBean(customDependencyName), container);
             requiredParams.add(paramType);
             requiredObjects.add(container.getSingletonBean(customDependencyName));
             prototypeBeanMetadata.setPrototypeClass(clazz);
