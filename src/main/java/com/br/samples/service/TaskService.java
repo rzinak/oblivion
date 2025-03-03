@@ -1,8 +1,8 @@
-package com.br.testingFiles.service;
+package com.br.samples.service;
 
-import com.br.annotations.OblivionPrototype;
-import com.br.annotations.OblivionService;
-import com.br.testingFiles.model.User;
+import com.br.autowired.annotations.OblivionPrototype;
+import com.br.autowired.annotations.OblivionService;
+import com.br.samples.model.User;
 
 @OblivionPrototype
 @OblivionService

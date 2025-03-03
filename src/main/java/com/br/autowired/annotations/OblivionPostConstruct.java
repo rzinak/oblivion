@@ -1,4 +1,4 @@
-package com.br.annotations;
+package com.br.autowired.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface OblivionPreDestroy {
+public @interface OblivionPostConstruct {
   public String key() default "";
 }
