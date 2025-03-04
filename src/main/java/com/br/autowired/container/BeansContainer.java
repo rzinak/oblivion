@@ -14,6 +14,7 @@ public class BeansContainer {
   // lifecylce methods
   private Map<Object, Method> preDestroyMethods = new ConcurrentHashMap<>();
   private Map<Object, Method> preShutdownMethods = new ConcurrentHashMap<>();
+  private Map<Object, Method> postShutdownMethods = new ConcurrentHashMap<>();
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
@@ -47,7 +48,7 @@ public class BeansContainer {
           ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
           ReflectionUtils.initializeFields(initPrototypeBean);
           ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(
+          ReflectionUtils.registerPersistentBeanLifecycles(
               prototypeBeanClass, initPrototypeBean, container);
           return initPrototypeBean;
         } else {
@@ -58,7 +59,7 @@ public class BeansContainer {
           ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
           ReflectionUtils.initializeFields(initPrototypeBean);
           ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(
+          ReflectionUtils.registerPersistentBeanLifecycles(
               prototypeBeanClass, initPrototypeBean, container);
           return initPrototypeBean;
         }
@@ -76,6 +77,10 @@ public class BeansContainer {
     preShutdownMethods.put(instantiatedClass, method);
   }
 
+  public void registerPostShutdownMethods(Object instantiatedClass, Method method) {
+    postShutdownMethods.put(instantiatedClass, method);
+  }
+
   public Map<?, Object> getAllSingletonBeans() {
     if (singletonBeans.isEmpty()) {
       return null;
@@ -91,6 +96,10 @@ public class BeansContainer {
     return this.preShutdownMethods.entrySet();
   }
 
+  public Set<Map.Entry<Object, Method>> getPosShutdownMethods() {
+    return this.postShutdownMethods.entrySet();
+  }
+
   public void clearPreDestroyMap() {
     this.preDestroyMethods.clear();
   }
@@ -99,11 +108,15 @@ public class BeansContainer {
     this.preShutdownMethods.clear();
   }
 
+  public void clearPostShutdownMap() {
+    this.postShutdownMethods.clear();
+  }
+
   public void clearSingletonBeansMap() {
     this.singletonBeans.clear();
   }
 
-  public void clearoPrototypeBeansMap() {
+  public void clearPrototypeBeansMap() {
     this.prototypeBeans.clear();
   }
 }

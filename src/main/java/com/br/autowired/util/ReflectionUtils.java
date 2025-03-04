@@ -3,6 +3,7 @@ package com.br.autowired.util;
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPostInitialization;
+import com.br.autowired.annotations.OblivionPostShutdown;
 import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
@@ -64,7 +65,8 @@ public class ReflectionUtils {
     }
   }
 
-  public static void registerPreDestroyAndPreShutdownMethods(
+  // NOTE: registers @OblivionPreDestroy, @OblivionPreShutdown, @OblivionPostShutdown
+  public static void registerPersistentBeanLifecycles(
       Class<?> clazz, Object objectToRun, BeansContainer container) throws Exception {
     for (Method method : clazz.getDeclaredMethods()) {
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
@@ -76,6 +78,12 @@ public class ReflectionUtils {
       if (method.isAnnotationPresent(OblivionPreShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           container.registerPreShutdownMethods(objectToRun, method);
+        }
+      }
+
+      if (method.isAnnotationPresent(OblivionPostShutdown.class)) {
+        if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
+          container.registerPostShutdownMethods(objectToRun, method);
         }
       }
     }
@@ -148,6 +156,13 @@ public class ReflectionUtils {
   }
 
   public static void runPreShutdownMethod(Object objectToRun, Method methodToRun) throws Exception {
+    if (objectToRun != null && objectToRun != null) {
+      methodToRun.invoke(objectToRun);
+    }
+  }
+
+  public static void runPostShutdownMethod(Object objectToRun, Method methodToRun)
+      throws Exception {
     if (objectToRun != null && objectToRun != null) {
       methodToRun.invoke(objectToRun);
     }

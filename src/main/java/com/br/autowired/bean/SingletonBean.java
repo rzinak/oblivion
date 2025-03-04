@@ -25,7 +25,7 @@ public class SingletonBean {
           container.registerSingletonBean(identifier, init);
           ReflectionUtils.initializeFields(container.getSingletonBean(identifier));
           ReflectionUtils.runPostInitializaionMethods(clazz, init);
-          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(clazz, init, container);
+          ReflectionUtils.registerPersistentBeanLifecycles(clazz, init, container);
 
         } else {
           Parameter[] params = ctor.getParameters();
@@ -55,7 +55,7 @@ public class SingletonBean {
           ReflectionUtils.runPostConstrucMethods(clazz, initClass);
           ReflectionUtils.initializeFields(container.getSingletonBean(identifier));
           ReflectionUtils.runPostInitializaionMethods(clazz, initClass);
-          ReflectionUtils.registerPreDestroyAndPreShutdownMethods(clazz, initClass, container);
+          ReflectionUtils.registerPersistentBeanLifecycles(clazz, initClass, container);
         }
       }
     }

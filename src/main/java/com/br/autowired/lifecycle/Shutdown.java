@@ -30,7 +30,17 @@ public class Shutdown {
 
                 container.clearPreDestroyMap();
                 container.clearSingletonBeansMap();
-                container.clearoPrototypeBeansMap();
+                container.clearPrototypeBeansMap();
+
+                for (Map.Entry<Object, Method> entry : container.getPosShutdownMethods()) {
+                  try {
+                    ReflectionUtils.runPostShutdownMethod(entry.getKey(), entry.getValue());
+                  } catch (Exception ex) {
+                    ex.printStackTrace();
+                  }
+                }
+
+                container.clearPostShutdownMap();
               }
             });
   }

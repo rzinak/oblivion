@@ -3,6 +3,7 @@ package com.br.samples.service;
 import com.br.autowired.annotations.Oblivion;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPostInitialization;
+import com.br.autowired.annotations.OblivionPostShutdown;
 import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
@@ -49,6 +50,11 @@ public class UserService {
   @OblivionPreShutdown
   public void preShutdown() {
     System.out.println("PreShutdown - im running before the container is shutdown");
+  }
+
+  @OblivionPostShutdown
+  public void postShutdown() {
+    System.out.println("PostShutdown - im running after the container is shutdown");
   }
 
   public List<User> getUsers() {
