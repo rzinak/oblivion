@@ -7,32 +7,21 @@ import com.br.autowired.annotations.OblivionPostShutdown;
 import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
-import com.br.autowired.annotations.OblivionService;
 import com.br.autowired.container.BeansContainer;
+import com.br.autowired.exception.OblivionException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 public class ReflectionUtils {
-  public static void checkIfAnnotated(Object object) throws Exception {
-    if (Objects.isNull(object)) {
-      throw new Exception("The object is null");
-    }
-
-    System.out.println("Annotation is present for class: " + object.getClass());
-    Class<?> retClass = object.getClass();
-
-    if (!retClass.isAnnotationPresent(Oblivion.class)) {
-      throw new Exception("Oblivion annotation is not present");
-    }
-  }
-
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
+  // TODO: also break this into different functions when adding more types
+  // like initializePrimitives, initializeNonPrimitives... maybe use helper
+  // function in case there are too many types
   public static void initializeFields(Object instantiatedClass) throws Exception {
     Class<?> clazz = instantiatedClass.getClass();
     Class<?> integerType = int.class;
@@ -47,19 +36,59 @@ public class ReflectionUtils {
       field.setAccessible(true);
       if (field.isAnnotationPresent(Oblivion.class)) {
         if (field.getType().isAssignableFrom(integerType)) {
-          field.set(instantiatedClass, 0);
+          try {
+            field.set(instantiatedClass, 0);
+          } catch (IllegalAccessException
+              | IllegalArgumentException
+              | NullPointerException
+              | ExceptionInInitializerError ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error setting field '%s' in class '%s': %s",
+                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
+          }
         }
 
         if (field.getType().isAssignableFrom(boxedIntegerType)) {
-          field.set(instantiatedClass, 0);
+          try {
+            field.set(instantiatedClass, 0);
+          } catch (IllegalAccessException
+              | IllegalArgumentException
+              | NullPointerException
+              | ExceptionInInitializerError ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error setting field '%s' in class '%s': %s",
+                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
+          }
         }
 
         if (field.getType().isAssignableFrom(stringType)) {
-          field.set(instantiatedClass, "Default");
+          try {
+            field.set(instantiatedClass, "Default");
+          } catch (IllegalAccessException
+              | IllegalArgumentException
+              | NullPointerException
+              | ExceptionInInitializerError ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error setting field '%s' in class '%s': %s",
+                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
+          }
         }
 
         if (field.getType().isAssignableFrom(arrayListType)) {
-          field.set(instantiatedClass, new ArrayList<>());
+          try {
+            field.set(instantiatedClass, new ArrayList<>());
+          } catch (IllegalAccessException
+              | IllegalArgumentException
+              | NullPointerException
+              | ExceptionInInitializerError ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error setting field '%s' in class '%s': %s",
+                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
+          }
         }
       }
     }
@@ -67,126 +96,228 @@ public class ReflectionUtils {
 
   // NOTE: registers @OblivionPreDestroy, @OblivionPreShutdown, @OblivionPostShutdown
   public static void registerPersistentBeanLifecycles(
-      Class<?> clazz, Object objectToRun, BeansContainer container) throws Exception {
+      Class<?> clazz, Object objectToRun, BeansContainer container) throws OblivionException {
     for (Method method : clazz.getDeclaredMethods()) {
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          container.registerPreDestroyMethods(objectToRun, method);
+          try {
+            container.registerPreDestroyMethods(objectToRun, method);
+          } catch (Exception ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error when registering pre-destroy method '%s' in class '%s': %s",
+                    method.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
+          }
         }
       }
 
       if (method.isAnnotationPresent(OblivionPreShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          container.registerPreShutdownMethods(objectToRun, method);
+          try {
+            container.registerPreShutdownMethods(objectToRun, method);
+          } catch (Exception ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error when registering pre-shutdown method '%s' in class '%s': %s",
+                    method.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
+          }
         }
       }
 
       if (method.isAnnotationPresent(OblivionPostShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
-          container.registerPostShutdownMethods(objectToRun, method);
+          try {
+            container.registerPostShutdownMethods(objectToRun, method);
+          } catch (Exception ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error when registering post-shutdown method '%s' in class '%s': %s",
+                    method.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
+          }
         }
       }
     }
   }
 
+  private static List<String> validateMethods(
+      Method[] methods, Class<?> clazz, Class<?> annotationClass) {
+    List<String> validationErrors = new ArrayList<>();
+
+    for (Method m : methods) {
+      if (m.isAnnotationPresent((Class<? extends Annotation>) annotationClass)) {
+        if (annotationClass.equals(OblivionPreInitialization.class)
+            && !Modifier.isStatic(m.getModifiers())) {
+          validationErrors.add(
+              String.format(
+                  "@%s error -> Method: '%s' in class '%s' must be a static method!",
+                  annotationClass.getSimpleName(), m.getName(), clazz.getSimpleName()));
+        }
+        if (m.getParameters().length != 0) {
+          validationErrors.add(
+              String.format(
+                  "@%s error -> Method: '%s' in class '%s' must have no parameters!",
+                  annotationClass.getSimpleName(), m.getName(), clazz.getSimpleName()));
+        }
+
+        if (!m.getReturnType().equals(Void.TYPE)) {
+          validationErrors.add(
+              String.format(
+                  "@%s error -> Method: '%s' in class '%s' must return void!",
+                  annotationClass.getSimpleName(), m.getName(), clazz.getSimpleName()));
+        }
+      }
+    }
+
+    return validationErrors;
+  }
+
+  private static List<String> executeAnnotatedMethods(
+      Method[] methods, Object objectToRun, Class<?> annotationClass) {
+
+    List<String> executionErrors = new ArrayList<>();
+
+    for (Method m : methods) {
+      if (m.isAnnotationPresent((Class<? extends Annotation>) annotationClass)) {
+        try {
+          m.invoke(objectToRun);
+        } catch (Exception ex) {
+          executionErrors.add(
+              String.format(
+                  "Failed to invoke @%s method '%s' in class '%s'. Reason: %s",
+                  annotationClass.getSimpleName(),
+                  m.getName(),
+                  objectToRun.getClass().getSimpleName(),
+                  ex.getMessage()));
+        }
+      }
+    }
+
+    return executionErrors;
+  }
+
   // NOTE: @OblivionPreInitialization should be a static method
-  public static void runPreInitializationMethods(Class<?> clazz) throws Exception {
-    if (clazz != null) {
-      Method[] methods = clazz.getDeclaredMethods();
-      Stream.of(methods)
-          .filter(m -> Modifier.isStatic(m.getModifiers()))
-          .filter(m -> m.isAnnotationPresent(OblivionPreInitialization.class))
-          .filter(m -> m.getParameters().length == 0)
-          .filter(m -> m.getReturnType().equals(Void.TYPE))
-          .forEach(
-              m -> {
-                try {
-                  // since its static, we pass null because static methods
-                  // belong to the class itself and not to any particular instance
-                  m.invoke(null);
-                } catch (Exception ex) {
-                  ex.printStackTrace();
-                }
-              });
+  public static void runPreInitializationMethods(Class<?> clazz) throws OblivionException {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class reference cannot be null");
+    }
+
+    Method[] methods = clazz.getDeclaredMethods();
+    List<String> methodValidationErrors =
+        validateMethods(methods, clazz, OblivionPreInitialization.class);
+
+    if (!methodValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPreInitialization methods:\n"
+              + String.join("\n", methodValidationErrors));
+    }
+
+    List<String> executionErrors =
+        executeAnnotatedMethods(methods, clazz, OblivionPreInitialization.class);
+
+    if (!executionErrors.isEmpty()) {
+      throw new OblivionException(
+          "Errors occcured during pre-initialization:\n" + String.join("\n", executionErrors));
     }
   }
 
-  public static void runPostConstrucMethods(Class<?> clazz, Object objectToRun) throws Exception {
-    if (clazz != null) {
-      Method[] methods = clazz.getDeclaredMethods();
-      Stream.of(methods)
-          .filter(m -> m.isAnnotationPresent(OblivionPostConstruct.class))
-          .filter(m -> m.getParameters().length == 0)
-          .filter(m -> m.getReturnType().equals(Void.TYPE))
-          .forEach(
-              m -> {
-                try {
-                  m.invoke(objectToRun);
-                } catch (Exception ex) {
-                  ex.printStackTrace();
-                }
-              });
+  public static void runPostConstructMethods(Class<?> clazz, Object objectToRun)
+      throws OblivionException {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class reference cannot be null");
+    }
+
+    Method[] methods = clazz.getDeclaredMethods();
+
+    List<String> methodValidationErrors =
+        validateMethods(methods, clazz, OblivionPostConstruct.class);
+
+    if (!methodValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPostConstruct methods:\n"
+              + String.join("\n", methodValidationErrors));
+    }
+
+    List<String> executionErrors =
+        executeAnnotatedMethods(methods, objectToRun, OblivionPostConstruct.class);
+
+    if (!executionErrors.isEmpty()) {
+      throw new OblivionException(
+          "Errors occured during post-construction:\n" + String.join("\n", executionErrors));
     }
   }
 
-  public static void runPostInitializaionMethods(Class<?> clazz, Object objectToRun)
-      throws Exception {
-    if (clazz != null) {
-      Method[] methods = clazz.getDeclaredMethods();
-      Stream.of(methods)
-          .filter(m -> m.isAnnotationPresent(OblivionPostInitialization.class))
-          .filter(m -> m.getParameters().length == 0)
-          .filter(m -> m.getReturnType().equals(Void.TYPE))
-          .forEach(
-              m -> {
-                try {
-                  m.invoke(objectToRun);
-                } catch (Exception ex) {
-                  ex.printStackTrace();
-                }
-              });
+  public static void runPostInitializationMethods(Class<?> clazz, Object objectToRun)
+      throws OblivionException {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class referene cannot be null");
+    }
+
+    Method[] methods = clazz.getDeclaredMethods();
+
+    List<String> methodValidationErrors =
+        validateMethods(methods, clazz, OblivionPostInitialization.class);
+
+    if (!methodValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPostInitialization methods:\n"
+              + String.join("\n", methodValidationErrors));
+    }
+
+    List<String> executionErrors =
+        executeAnnotatedMethods(methods, objectToRun, OblivionPostInitialization.class);
+
+    if (!executionErrors.isEmpty()) {
+      throw new OblivionException(
+          "Errors occured during post-initialization:\n" + String.join("\n", executionErrors));
     }
   }
 
   // NOTE: objectToRun here is the class where the method is
-  public static void runPreDestroyMethod(Object objectToRun, Method methodToRun) throws Exception {
-    if (objectToRun != null && objectToRun != null) {
+  public static void runPreDestroyMethod(Object objectToRun, Method methodToRun)
+      throws OblivionException {
+    if (objectToRun == null || methodToRun == null) {
+      throw new IllegalArgumentException("Object or Method reference cannot be nulll");
+    }
+
+    try {
       methodToRun.invoke(objectToRun);
+    } catch (Exception ex) {
+      throw new OblivionException(
+          String.format(
+              "Failed to invoke @OblivionPreShutdown method '%s' in class '%s'. Reason: %s",
+              methodToRun.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
     }
   }
 
-  public static void runPreShutdownMethod(Object objectToRun, Method methodToRun) throws Exception {
-    if (objectToRun != null && objectToRun != null) {
+  public static void runPreShutdownMethod(Object objectToRun, Method methodToRun)
+      throws OblivionException {
+    if (objectToRun == null || methodToRun == null) {
+      throw new IllegalArgumentException("Object or Method reference cannot be null");
+    }
+
+    try {
       methodToRun.invoke(objectToRun);
+    } catch (Exception ex) {
+      throw new OblivionException(
+          String.format(
+              "Failed to invoke @OblivionPreShutdown method '%s' in class '%s'. Reason: %s",
+              methodToRun.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
     }
   }
 
   public static void runPostShutdownMethod(Object objectToRun, Method methodToRun)
-      throws Exception {
-    if (objectToRun != null && objectToRun != null) {
+      throws OblivionException {
+    if (objectToRun == null || methodToRun == null) {
+      throw new IllegalArgumentException("Object or Method reference cannot be null");
+    }
+
+    try {
       methodToRun.invoke(objectToRun);
-    }
-  }
-
-  public static String getElementsKey(Field field) {
-    String value = field.getAnnotation(Oblivion.class).key();
-    return value.isEmpty() ? field.getName() : value;
-  }
-
-  public static void logAnnotatedFields(Object object) throws Exception {
-    Class<?> clazz = object.getClass();
-    for (Field field : clazz.getDeclaredFields()) {
-      field.setAccessible(true);
-      if (field.isAnnotationPresent(Oblivion.class)) {
-        System.out.println("Field: " + field.getName() + " has value: " + field.get(object));
-      }
-    }
-  }
-
-  public static void logAnnotatedClasses(Object object) throws Exception {
-    Class<?> clazz = object.getClass();
-    if (clazz.isAnnotationPresent(OblivionService.class)) {
-      System.out.println("Class: " + clazz.getName() + " has value: " + clazz.getDeclaredClasses());
+    } catch (Exception ex) {
+      throw new OblivionException(
+          String.format(
+              "Failed to invoke @OblivionPostShutdown method '%s' in class '%s'. Reason: %s",
+              methodToRun.getName(), objectToRun.getClass().getSimpleName(), ex.getMessage()));
     }
   }
 }

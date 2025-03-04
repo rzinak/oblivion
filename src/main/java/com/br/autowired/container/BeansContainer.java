@@ -1,7 +1,9 @@
 package com.br.autowired.container;
 
+import com.br.autowired.exception.OblivionException;
 import com.br.autowired.util.ReflectionUtils;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
@@ -34,50 +36,70 @@ public class BeansContainer {
   }
 
   public Object getPrototypeBean(String identifier, BeansContainer container) throws Exception {
-    Class<?> prototypeBeanClass = prototypeBeans.get(identifier).getPrototypeClass();
-    Class<?>[] requiredParams = prototypeBeans.get(identifier).getRequiredParams();
-    Object[] requiredObjects = prototypeBeans.get(identifier).getRequiredObjects();
+    try {
+      Class<?> prototypeBeanClass = prototypeBeans.get(identifier).getPrototypeClass();
+      Class<?>[] requiredParams = prototypeBeans.get(identifier).getRequiredParams();
+      Object[] requiredObjects = prototypeBeans.get(identifier).getRequiredObjects();
 
-    if (prototypeBeanClass != null) {
+      if (prototypeBeanClass != null) {
 
-      Constructor<?>[] ctors = prototypeBeanClass.getDeclaredConstructors();
+        Constructor<?>[] ctors = prototypeBeanClass.getDeclaredConstructors();
 
-      for (Constructor<?> ctor : ctors) {
-        if (ctor.getParameterCount() == 0) {
-          Object initPrototypeBean = prototypeBeanClass.newInstance();
-          ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.initializeFields(initPrototypeBean);
-          ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.registerPersistentBeanLifecycles(
-              prototypeBeanClass, initPrototypeBean, container);
-          return initPrototypeBean;
-        } else {
-          Object initPrototypeBean =
-              prototypeBeanClass
-                  .getDeclaredConstructor(requiredParams)
-                  .newInstance(requiredObjects);
-          ReflectionUtils.runPostConstrucMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.initializeFields(initPrototypeBean);
-          ReflectionUtils.runPostInitializaionMethods(prototypeBeanClass, initPrototypeBean);
-          ReflectionUtils.registerPersistentBeanLifecycles(
-              prototypeBeanClass, initPrototypeBean, container);
-          return initPrototypeBean;
+        for (Constructor<?> ctor : ctors) {
+          if (ctor.getParameterCount() == 0) {
+            Object initPrototypeBean = prototypeBeanClass.newInstance();
+            ReflectionUtils.runPostConstructMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.initializeFields(initPrototypeBean);
+            ReflectionUtils.runPostInitializationMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.registerPersistentBeanLifecycles(
+                prototypeBeanClass, initPrototypeBean, container);
+            return initPrototypeBean;
+          } else {
+            Object initPrototypeBean =
+                prototypeBeanClass
+                    .getDeclaredConstructor(requiredParams)
+                    .newInstance(requiredObjects);
+            ReflectionUtils.runPostConstructMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.initializeFields(initPrototypeBean);
+            ReflectionUtils.runPostInitializationMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.registerPersistentBeanLifecycles(
+                prototypeBeanClass, initPrototypeBean, container);
+            return initPrototypeBean;
+          }
         }
       }
-    }
 
-    return null;
+      return null;
+    } catch (NullPointerException
+        | NoSuchMethodException
+        | InstantiationException
+        | IllegalAccessException
+        | InvocationTargetException ex) {
+      throw new OblivionException("Error creating prototype bean: " + identifier, ex);
+    }
   }
 
   public void registerPreDestroyMethods(Object instantiatedClass, Method method) {
+    if (instantiatedClass == null || method == null) {
+      throw new IllegalArgumentException("Instantiated class or method cannot be null");
+    }
+
     preDestroyMethods.put(instantiatedClass, method);
   }
 
   public void registerPreShutdownMethods(Object instantiatedClass, Method method) {
+    if (instantiatedClass == null || method == null) {
+      throw new IllegalArgumentException("Instantiated class or method cannot be null");
+    }
+
     preShutdownMethods.put(instantiatedClass, method);
   }
 
   public void registerPostShutdownMethods(Object instantiatedClass, Method method) {
+    if (instantiatedClass == null || method == null) {
+      throw new IllegalArgumentException("Instantiated class or method cannot be null");
+    }
+
     postShutdownMethods.put(instantiatedClass, method);
   }
 
