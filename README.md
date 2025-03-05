@@ -45,6 +45,10 @@ Managing the lifecycle of a bean in phases, starting simple and adding complexit
 
 ---
 
+### Implemented Lifecycle extra features
+
+- Ordered Lifecycle methods using `@AnyAnnotation(order = 2)`
+
 ## Cool Features to Implement 
 
 ### Conditional Lifecycle Methods  
@@ -66,17 +70,6 @@ Allow lifecycle methods to run asynchronously for **better performance** (e.g., 
 ```
 
 This can be done using a thread pool.
-
-### Ordered Lifecycle Methods
-
-Control the **execution order** of lifecycle callbacks:
-
-```java
-@OblivionPostConstruct(order = 1)
-@OblivionPostConstruct(order = 2)
-```
-
-Before invocation, methods must be sorted by order.
 
 ### Custom Lifecycle Phases
 

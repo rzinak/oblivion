@@ -11,9 +11,11 @@ import com.br.autowired.container.BeansContainer;
 import com.br.autowired.exception.OblivionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -167,7 +169,6 @@ public class ReflectionUtils {
         }
       }
     }
-
     return validationErrors;
   }
 
@@ -195,13 +196,63 @@ public class ReflectionUtils {
     return executionErrors;
   }
 
+  private static List<String> validateMethodOrder(
+      Method[] methods, Class<?> clazz, Class<? extends Annotation> annotationClass)
+      throws OblivionException {
+    List<String> orderValidationErrors = new ArrayList<>();
+
+    for (Method m : methods) {
+      Annotation annotation = m.getAnnotation(annotationClass);
+      if (annotation != null) {
+        try {
+          // NOTE: this orderMethod is not the method itself, but the property "order"
+          // that we can use in the annotation
+          Method orderMethod = annotationClass.getMethod("order");
+          int order = (Integer) orderMethod.invoke(annotation);
+          if (order < 0) {
+            orderValidationErrors.add(
+                String.format(
+                    "@%s error -> 'order' property in method: '%s' inside class '%s' should be 0 or"
+                        + " any value greater than 0.\n"
+                        + "HINT: You can also leave it empty, default value will be 0.",
+                    annotationClass.getSimpleName(), m.getName(), clazz.getSimpleName()));
+          }
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
+          throw new OblivionException(
+              "Error while validating method order of execution: " + ex.getMessage());
+        }
+      }
+    }
+    return orderValidationErrors;
+  }
+
   // NOTE: @OblivionPreInitialization should be a static method
   public static void runPreInitializationMethods(Class<?> clazz) throws OblivionException {
     if (clazz == null) {
       throw new IllegalArgumentException("Class reference cannot be null");
     }
 
-    Method[] methods = clazz.getDeclaredMethods();
+    Method[] methods =
+        Arrays.stream(clazz.getDeclaredMethods())
+            .filter(m -> m.isAnnotationPresent(OblivionPreInitialization.class))
+            .toArray(Method[]::new);
+
+    List<String> methodOrderValidationErrors =
+        validateMethodOrder(methods, clazz, OblivionPreInitialization.class);
+
+    if (!methodOrderValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPreInitialization ordering of methods:\n"
+              + String.join("\n", methodOrderValidationErrors));
+    }
+
+    Arrays.sort(
+        methods,
+        (a, b) ->
+            Integer.compare(
+                a.getAnnotation(OblivionPreInitialization.class).order(),
+                b.getAnnotation(OblivionPreInitialization.class).order()));
+
     List<String> methodValidationErrors =
         validateMethods(methods, clazz, OblivionPreInitialization.class);
 
@@ -226,7 +277,26 @@ public class ReflectionUtils {
       throw new IllegalArgumentException("Class reference cannot be null");
     }
 
-    Method[] methods = clazz.getDeclaredMethods();
+    Method[] methods =
+        Arrays.stream(clazz.getDeclaredMethods())
+            .filter(m -> m.isAnnotationPresent(OblivionPostConstruct.class))
+            .toArray(Method[]::new);
+
+    List<String> methodOrderValidationErrors =
+        validateMethodOrder(methods, clazz, OblivionPostConstruct.class);
+
+    if (!methodOrderValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPostConstruct ordering of methods:\n"
+              + String.join("\n", methodOrderValidationErrors));
+    }
+
+    Arrays.sort(
+        methods,
+        (a, b) ->
+            Integer.compare(
+                a.getAnnotation(OblivionPostConstruct.class).order(),
+                b.getAnnotation(OblivionPostConstruct.class).order()));
 
     List<String> methodValidationErrors =
         validateMethods(methods, clazz, OblivionPostConstruct.class);
@@ -252,7 +322,26 @@ public class ReflectionUtils {
       throw new IllegalArgumentException("Class referene cannot be null");
     }
 
-    Method[] methods = clazz.getDeclaredMethods();
+    Method[] methods =
+        Arrays.stream(clazz.getDeclaredMethods())
+            .filter(m -> m.isAnnotationPresent(OblivionPostInitialization.class))
+            .toArray(Method[]::new);
+
+    List<String> methodOrderValidationErrors =
+        validateMethodOrder(methods, clazz, OblivionPostInitialization.class);
+
+    if (!methodOrderValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occured during validation of @OblivionPostInitialization ordering of methods:\n"
+              + String.join("\n", methodOrderValidationErrors));
+    }
+
+    Arrays.sort(
+        methods,
+        (a, b) ->
+            Integer.compare(
+                a.getAnnotation(OblivionPostInitialization.class).order(),
+                b.getAnnotation(OblivionPostInitialization.class).order()));
 
     List<String> methodValidationErrors =
         validateMethods(methods, clazz, OblivionPostInitialization.class);
@@ -272,7 +361,6 @@ public class ReflectionUtils {
     }
   }
 
-  // NOTE: objectToRun here is the class where the method is
   public static void runPreDestroyMethod(Object objectToRun, Method methodToRun)
       throws OblivionException {
     if (objectToRun == null || methodToRun == null) {

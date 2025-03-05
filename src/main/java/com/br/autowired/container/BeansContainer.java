@@ -5,8 +5,9 @@ import com.br.autowired.util.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BeansContainer {
@@ -14,9 +15,9 @@ public class BeansContainer {
   private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
 
   // lifecylce methods
-  private Map<Object, Method> preDestroyMethods = new ConcurrentHashMap<>();
-  private Map<Object, Method> preShutdownMethods = new ConcurrentHashMap<>();
-  private Map<Object, Method> postShutdownMethods = new ConcurrentHashMap<>();
+  private List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
+  private List<Pair<Object, Method>> preShutdownMethods = new ArrayList<>();
+  private List<Pair<Object, Method>> postShutdownMethods = new ArrayList<>();
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
@@ -84,7 +85,8 @@ public class BeansContainer {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
 
-    preDestroyMethods.put(instantiatedClass, method);
+    Pair<Object, Method> preDestroyMethod = new Pair<Object, Method>(instantiatedClass, method);
+    preDestroyMethods.add(preDestroyMethod);
   }
 
   public void registerPreShutdownMethods(Object instantiatedClass, Method method) {
@@ -92,7 +94,8 @@ public class BeansContainer {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
 
-    preShutdownMethods.put(instantiatedClass, method);
+    Pair<Object, Method> preShutdownMethod = new Pair<Object, Method>(instantiatedClass, method);
+    preShutdownMethods.add(preShutdownMethod);
   }
 
   public void registerPostShutdownMethods(Object instantiatedClass, Method method) {
@@ -100,7 +103,8 @@ public class BeansContainer {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
 
-    postShutdownMethods.put(instantiatedClass, method);
+    Pair<Object, Method> postShutdownMethod = new Pair<Object, Method>(instantiatedClass, method);
+    postShutdownMethods.add(postShutdownMethod);
   }
 
   public Map<?, Object> getAllSingletonBeans() {
@@ -110,16 +114,16 @@ public class BeansContainer {
     return singletonBeans;
   }
 
-  public Set<Map.Entry<Object, Method>> getPreDestroyMethods() {
-    return this.preDestroyMethods.entrySet();
+  public List<Pair<Object, Method>> getPreDestroyMethods() {
+    return this.preDestroyMethods;
   }
 
-  public Set<Map.Entry<Object, Method>> getPreShutdownMethods() {
-    return this.preShutdownMethods.entrySet();
+  public List<Pair<Object, Method>> getPreShutdownMethods() {
+    return this.preShutdownMethods;
   }
 
-  public Set<Map.Entry<Object, Method>> getPosShutdownMethods() {
-    return this.postShutdownMethods.entrySet();
+  public List<Pair<Object, Method>> getPostShutdownMethods() {
+    return this.postShutdownMethods;
   }
 
   public void clearPreDestroyMap() {

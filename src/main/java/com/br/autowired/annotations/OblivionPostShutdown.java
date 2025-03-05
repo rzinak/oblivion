@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface OblivionPostShutdown {
   public String key() default "";
+
+  public int order() default 0;
 }

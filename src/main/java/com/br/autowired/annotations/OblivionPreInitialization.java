@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface OblivionPreInitialization {
-  public String key() default "";
+  public int order() default 0;
 }
