@@ -8,7 +8,6 @@ import com.br.autowired.container.Pair;
 import com.br.autowired.exception.OblivionException;
 import com.br.autowired.util.ReflectionUtils;
 import java.lang.reflect.Method;
-import java.util.Collections;
 
 public class Shutdown {
   public void attachShutdown(BeansContainer container) {
@@ -17,27 +16,17 @@ public class Shutdown {
             new Thread() {
               @Override
               public void run() {
-
-                Collections.sort(
-                    container.getPreDestroyMethods(),
-                    (a, b) ->
-                        Integer.compare(
-                            a.getR().getAnnotation(OblivionPreDestroy.class).order(),
-                            b.getR().getAnnotation(OblivionPreDestroy.class).order()));
-
-                Collections.sort(
-                    container.getPreShutdownMethods(),
-                    (a, b) ->
-                        Integer.compare(
-                            a.getR().getAnnotation(OblivionPreShutdown.class).order(),
-                            b.getR().getAnnotation(OblivionPreShutdown.class).order()));
-
-                Collections.sort(
-                    container.getPostShutdownMethods(),
-                    (a, b) ->
-                        Integer.compare(
-                            a.getR().getAnnotation(OblivionPostShutdown.class).order(),
-                            b.getR().getAnnotation(OblivionPostShutdown.class).order()));
+                try {
+                  ReflectionUtils.validateAndSortMethods(
+                      container.getPreDestroyMethods(), OblivionPreDestroy.class);
+                  ReflectionUtils.validateAndSortMethods(
+                      container.getPreShutdownMethods(), OblivionPreShutdown.class);
+                  ReflectionUtils.validateAndSortMethods(
+                      container.getPostShutdownMethods(), OblivionPostShutdown.class);
+                } catch (OblivionException ex) {
+                  System.out.println(ex.getMessage());
+                  String.format("Error during execution of destruction lifecycle methods: %s", ex);
+                }
 
                 for (Pair<Object, Method> entry : container.getPreDestroyMethods()) {
                   try {

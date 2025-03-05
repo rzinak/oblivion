@@ -8,6 +8,7 @@ import com.br.autowired.annotations.OblivionPreDestroy;
 import com.br.autowired.annotations.OblivionPreInitialization;
 import com.br.autowired.annotations.OblivionPreShutdown;
 import com.br.autowired.container.BeansContainer;
+import com.br.autowired.container.Pair;
 import com.br.autowired.exception.OblivionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -196,7 +197,7 @@ public class ReflectionUtils {
     return executionErrors;
   }
 
-  private static List<String> validateMethodOrder(
+  public static List<String> validateMethodOrder(
       Method[] methods, Class<?> clazz, Class<? extends Annotation> annotationClass)
       throws OblivionException {
     List<String> orderValidationErrors = new ArrayList<>();
@@ -224,6 +225,45 @@ public class ReflectionUtils {
       }
     }
     return orderValidationErrors;
+  }
+
+  public static <T extends Annotation> void validateAndSortMethods(
+      List<Pair<Object, Method>> methods, Class<T> annotationClass) throws OblivionException {
+    Method[] methodArray = methods.stream().map(Pair::getR).toArray(Method[]::new);
+    List<String> validationErrors = validateMethodOrder(methodArray, Object.class, annotationClass);
+
+    if (!validationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occurred during validation of @"
+              + annotationClass.getSimpleName()
+              + " methods:\n"
+              + String.join("\n", validationErrors));
+    }
+
+    methods.sort(
+        (a, b) -> {
+          int orderA = getOrderFromAnnotation(a.getR(), annotationClass);
+          int orderB = getOrderFromAnnotation(b.getR(), annotationClass);
+          return Integer.compare(orderA, orderB);
+        });
+  }
+
+  public static <T extends Annotation> int getOrderFromAnnotation(
+      Method method, Class<T> annotationClass) {
+    T annotation = method.getAnnotation(annotationClass);
+    if (annotation == null) {
+      throw new IllegalArgumentException(
+          "Method is not annotated with @" + annotationClass.getSimpleName());
+    }
+
+    try {
+      // NOTE: this orderMethod is not the method itself, but the property "order"
+      // that we can use in the annotation
+      Method orderMethod = annotationClass.getMethod("order");
+      return (int) orderMethod.invoke(annotation);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
+      throw new RuntimeException("Failed to extract 'order' value from annotation", ex);
+    }
   }
 
   // NOTE: @OblivionPreInitialization should be a static method
