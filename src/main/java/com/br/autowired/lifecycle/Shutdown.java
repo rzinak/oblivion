@@ -19,13 +19,16 @@ public class Shutdown {
                 try {
                   ReflectionUtils.validateAndSortMethods(
                       container.getPreDestroyMethods(), OblivionPreDestroy.class);
+
                   ReflectionUtils.validateAndSortMethods(
                       container.getPreShutdownMethods(), OblivionPreShutdown.class);
+
                   ReflectionUtils.validateAndSortMethods(
                       container.getPostShutdownMethods(), OblivionPostShutdown.class);
                 } catch (OblivionException ex) {
+                  System.err.println("SHUTDOWN ABORTED: Configuration errors detected");
                   System.out.println(ex.getMessage());
-                  String.format("Error during execution of destruction lifecycle methods: %s", ex);
+                  return;
                 }
 
                 for (Pair<Object, Method> entry : container.getPreDestroyMethods()) {

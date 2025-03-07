@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface OblivionPostShutdown {
-  public String key() default "";
-
   public int order() default 0;
+
+  public String cond() default "";
 }

@@ -17,8 +17,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class ReflectionUtils {
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
@@ -227,25 +229,88 @@ public class ReflectionUtils {
     return orderValidationErrors;
   }
 
-  public static <T extends Annotation> void validateAndSortMethods(
-      List<Pair<Object, Method>> methods, Class<T> annotationClass) throws OblivionException {
-    Method[] methodArray = methods.stream().map(Pair::getR).toArray(Method[]::new);
-    List<String> validationErrors = validateMethodOrder(methodArray, Object.class, annotationClass);
+  // NOTE: filters out method with not matching conditionals, so they won't be executed
+  public static Method[] validateMethodCond(
+      Method[] methods, Class<?> clazz, Class<? extends Annotation> annotationClass)
+      throws OblivionException {
+    List<String> condValidationErrors = new ArrayList<>();
+    List<Method> validatedCondMethodsList = new ArrayList<>();
 
-    if (!validationErrors.isEmpty()) {
-      throw new OblivionException(
-          "Error(s) occurred during validation of @"
-              + annotationClass.getSimpleName()
-              + " methods:\n"
-              + String.join("\n", validationErrors));
+    Properties oblivionProperties;
+    try {
+      oblivionProperties = PropertiesUtil.loadProperties();
+    } catch (OblivionException ex) {
+      throw new OblivionException("Error loading oblivion properties: " + ex.getMessage());
     }
 
+    for (Method m : methods) {
+      Annotation annotation = m.getAnnotation(annotationClass);
+      if (annotation != null) {
+        try {
+          // NOTE: this orderMethod is not the method itself, but the property "order"
+          // that we can use in the annotation
+          Method methodCond = annotationClass.getMethod("cond");
+          String cond = (String) methodCond.invoke(annotation);
+
+          if (!cond.isEmpty()) {
+            String[] condValues = cond.split("\\.");
+            String key = condValues[0];
+            String expectedValue = condValues[1];
+
+            if (!oblivionProperties.containsKey(key)) {
+              condValidationErrors.add(
+                  String.format(
+                      "OBLIVION PROPERTIES ERROR -> Could not find a value for the variable '%s' in"
+                          + " method '%s' inside class '%s'. Are you sure it exists in the"
+                          + " oblivion.properties file, and the value matches with the value"
+                          + " provided in the annotation?",
+                      condValues[0], m.getName(), clazz.getSimpleName()));
+            } else {
+              String actualValue = oblivionProperties.getProperty(key).trim();
+              if (actualValue.equals(expectedValue)) {
+                validatedCondMethodsList.add(m);
+              }
+            }
+          } else {
+            validatedCondMethodsList.add(m);
+          }
+
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
+          throw new OblivionException(
+              "Error while validating method conditionals: " + ex.getMessage());
+        }
+      }
+    }
+
+    if (!condValidationErrors.isEmpty()) {
+      throw new OblivionException(
+          "Error(s) occurred during validation of method conditionals:\n"
+              + String.join("\n", condValidationErrors));
+    }
+
+    return validatedCondMethodsList.toArray(new Method[0]);
+  }
+
+  public static <T extends Annotation> void validateAndSortMethods(
+      List<Pair<Object, Method>> methods, Class<T> annotationClass) throws OblivionException {
+
+    Method[] methodArray = methods.stream().map(Pair::getR).toArray(Method[]::new);
+
+    Method[] filteredMethods = validateMethodCond(methodArray, Object.class, annotationClass);
+
+    List<String> orderErrors = validateMethodOrder(filteredMethods, Object.class, annotationClass);
+
+    if (!orderErrors.isEmpty()) {
+      throw new OblivionException(
+          "Order validation failed for @%s:\n%s"
+              .formatted(annotationClass.getSimpleName(), String.join("\n", orderErrors)));
+    }
+
+    List<Method> validMethods = Arrays.asList(filteredMethods);
+    methods.removeIf(pair -> !validMethods.contains(pair.getR()));
+
     methods.sort(
-        (a, b) -> {
-          int orderA = getOrderFromAnnotation(a.getR(), annotationClass);
-          int orderB = getOrderFromAnnotation(b.getR(), annotationClass);
-          return Integer.compare(orderA, orderB);
-        });
+        Comparator.comparingInt(pair -> getOrderFromAnnotation(pair.getR(), annotationClass)));
   }
 
   public static <T extends Annotation> int getOrderFromAnnotation(
@@ -286,15 +351,18 @@ public class ReflectionUtils {
               + String.join("\n", methodOrderValidationErrors));
     }
 
+    Method[] methodsValidatedByCond =
+        validateMethodCond(methods, clazz, OblivionPreInitialization.class);
+
     Arrays.sort(
-        methods,
+        methodsValidatedByCond,
         (a, b) ->
             Integer.compare(
                 a.getAnnotation(OblivionPreInitialization.class).order(),
                 b.getAnnotation(OblivionPreInitialization.class).order()));
 
     List<String> methodValidationErrors =
-        validateMethods(methods, clazz, OblivionPreInitialization.class);
+        validateMethods(methodsValidatedByCond, clazz, OblivionPreInitialization.class);
 
     if (!methodValidationErrors.isEmpty()) {
       throw new OblivionException(
@@ -303,7 +371,7 @@ public class ReflectionUtils {
     }
 
     List<String> executionErrors =
-        executeAnnotatedMethods(methods, clazz, OblivionPreInitialization.class);
+        executeAnnotatedMethods(methodsValidatedByCond, clazz, OblivionPreInitialization.class);
 
     if (!executionErrors.isEmpty()) {
       throw new OblivionException(
@@ -331,8 +399,11 @@ public class ReflectionUtils {
               + String.join("\n", methodOrderValidationErrors));
     }
 
+    Method[] methodsValidatedByCond =
+        validateMethodCond(methods, clazz, OblivionPostConstruct.class);
+
     Arrays.sort(
-        methods,
+        methodsValidatedByCond,
         (a, b) ->
             Integer.compare(
                 a.getAnnotation(OblivionPostConstruct.class).order(),
@@ -376,8 +447,11 @@ public class ReflectionUtils {
               + String.join("\n", methodOrderValidationErrors));
     }
 
+    Method[] methodsValidatedByCond =
+        validateMethodCond(methods, clazz, OblivionPostInitialization.class);
+
     Arrays.sort(
-        methods,
+        methodsValidatedByCond,
         (a, b) ->
             Integer.compare(
                 a.getAnnotation(OblivionPostInitialization.class).order(),

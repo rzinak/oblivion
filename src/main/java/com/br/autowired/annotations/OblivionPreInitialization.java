@@ -12,4 +12,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface OblivionPreInitialization {
   public int order() default 0;
+
+  public String cond() default "";
 }

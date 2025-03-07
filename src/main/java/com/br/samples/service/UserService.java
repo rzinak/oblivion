@@ -30,7 +30,7 @@ public class UserService {
             + " field init as well");
   }
 
-  @OblivionPreInitialization()
+  @OblivionPreInitialization(cond = "NAME.RENAN")
   public static void firstPreInit() {
     System.out.println(
         "FIRST | PreInitialization - running before the bean is fully initialized, before DI and"
@@ -97,7 +97,7 @@ public class UserService {
     System.out.println("SECOND | PostShutdown - im running after the container is shutdown");
   }
 
-  @OblivionPostShutdown
+  @OblivionPostShutdown(cond = "NAME.ASDASDASD")
   public void firstPostShutdown() {
     System.out.println("FIRST | PostShutdown - im running after the container is shutdown");
   }
