@@ -8,7 +8,7 @@ Going in-depth on how Spring's `@Autowired` works, so I'm building a custom DI f
 - **Constructor Injection** *(not yet tweaked for multiple constructors with arguments)*
 - **Unique Bean Naming** *(assign unique names to instances)*
 - **Prototype Beans** *(create independent instances even when using the same identifier)*
-- **Basic Bean Lifecycle Management*
+- **Basic Bean Lifecycle Management**
 
 ## Custom Annotations
 
@@ -28,11 +28,9 @@ Beans are instantiated automatically and can be used normally.
 
 ---
 
-## Next Steps
+### Lifecycle Callbacks
 
-### Lifecycle Callbacks *(In Progress)*  
-
-Managing the lifecycle of a bean in phases, starting simple and adding complexity over time.
+Manage the lifecycle of a bean in phases.
 
 ### Implemented Lifecycle Phases
 
@@ -49,17 +47,19 @@ Managing the lifecycle of a bean in phases, starting simple and adding complexit
 
 - Ordered Lifecycle methods using `@AnyAnnotation(order = 2)`
 
-## Cool Features to Implement 
-
-### Conditional Lifecycle Methods  
-
-Add attributes to lifecycle annotations to run methods **only under specific conditions**.
+- Add attributes to lifecycle annotations to run methods **only under specific conditions**.
 
 ```java
-@OblivionPostConstruct(cond = "env.prod")
+@OblivionPostConstruct(cond = "ENV.PROD")
 ```
 
-Before invoking the method, the condition must be evaluated.
+Methods with the condition not matching the value in the `oblivion.properties` file are skipped and will not be executed.
+
+Configurations are made in the `oblivion.properties` file like this: `KEY=VALUE`.
+
+## Cool Features to Implement Later
+
+### Conditional Lifecycle Methods  
 
 ### Async Lifecycle Methods
 
@@ -75,7 +75,7 @@ This can be done using a thread pool.
 
 Let users define **custom lifecycle annotations**.
 
-Haven't figured out an approach yet, but will do it eventually because it seems cool.
+Haven't figured out an approach yet, but will do it eventually because it looks cool.
 
 ## Other Things To Do
 
