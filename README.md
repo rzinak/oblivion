@@ -15,6 +15,8 @@ Going in-depth on how Spring's `@Autowired` works, so I'm building a custom DI f
 - `@Oblivion` - Injects dependencies into fields *(support for more types pending, will do it eventually tho)*
 - `@OblivionService` - Marks a class as a service; searches for constructors and injects dependencies
 - `@OblivionPrototype` - Defines a prototype bean *(each request gets a new instance)*
+- `@OblivionConstructorInject` - Defines a specific constructor to be injected. If none is specified, the first constructor is injected by default.
+    it can receive an optional `name = String` property that can be used to instantiate a class with different constructors when defining a prototype bean.
 - `@OblivionPreInitialization` - Executes a method before the bean is fully initialized *(before field injections)*
 - `@OblivionPostConstruct` - Executes a method immediately after dependencies are injected *(for basic setup)*
 - `@OblivionPostInitialization` - Executes a method after full initialization *(ideal for advanced setups like starting background tasks)*
@@ -45,7 +47,12 @@ Manage the lifecycle of a bean in phases.
 
 ### Implemented Lifecycle extra features
 
-- Ordered Lifecycle methods using `@AnyAnnotation(order = 2)`
+- Ordered Lifecycle methods using `order = N`
+
+```java
+@OblivionPreInitialization(order = 2)
+@OblivionPreInitialization(order = 1)
+```
 
 - Add attributes to lifecycle annotations to run methods **only under specific conditions**.
 
@@ -58,8 +65,6 @@ Methods with the condition not matching the value in the `oblivion.properties` f
 Configurations are made in the `oblivion.properties` file like this: `KEY=VALUE`.
 
 ## Cool Features to Implement Later
-
-### Conditional Lifecycle Methods  
 
 ### Async Lifecycle Methods
 

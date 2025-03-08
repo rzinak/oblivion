@@ -1,6 +1,6 @@
 package com.br.samples.service;
 
-import com.br.autowired.annotations.Oblivion;
+import com.br.autowired.annotations.OblivionField;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPostInitialization;
 import com.br.autowired.annotations.OblivionPostShutdown;
@@ -13,7 +13,7 @@ import java.util.List;
 
 @OblivionService
 public class UserService {
-  @Oblivion private List<User> users;
+  @OblivionField private List<User> users;
 
   // @Oblivion private String myFavColor;
 

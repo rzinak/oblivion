@@ -114,6 +114,13 @@ public class BeansContainer {
     return singletonBeans;
   }
 
+  public Map<String, PrototypeBeanMetadata> getAllPrototypenBeans() {
+    if (prototypeBeans.isEmpty()) {
+      return null;
+    }
+    return prototypeBeans;
+  }
+
   public List<Pair<Object, Method>> getPreDestroyMethods() {
     return this.preDestroyMethods;
   }

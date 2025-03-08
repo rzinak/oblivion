@@ -1,6 +1,6 @@
 package com.br.autowired.util;
 
-import com.br.autowired.annotations.Oblivion;
+import com.br.autowired.annotations.OblivionField;
 import com.br.autowired.annotations.OblivionPostConstruct;
 import com.br.autowired.annotations.OblivionPostInitialization;
 import com.br.autowired.annotations.OblivionPostShutdown;
@@ -33,13 +33,18 @@ public class ReflectionUtils {
     Class<?> boxedIntegerType = Integer.class;
     Class<?> stringType = String.class;
     Class<?> arrayListType = ArrayList.class;
+    Class<?> booleanType = boolean.class;
+    Class<?> boxedBooleanType = Boolean.class;
     Class<?> listType = List.class;
     Class<?> mapType = Map.class;
     Class<?> objectType = Object.class;
 
+    Field[] f = clazz.getDeclaredFields();
+
     for (Field field : clazz.getDeclaredFields()) {
-      field.setAccessible(true);
-      if (field.isAnnotationPresent(Oblivion.class)) {
+      if (field.isAnnotationPresent(OblivionField.class)) {
+        field.setAccessible(true);
+
         if (field.getType().isAssignableFrom(integerType)) {
           try {
             field.set(instantiatedClass, 0);
@@ -70,7 +75,7 @@ public class ReflectionUtils {
 
         if (field.getType().isAssignableFrom(stringType)) {
           try {
-            field.set(instantiatedClass, "Default");
+            field.set(instantiatedClass, "Oblivion");
           } catch (IllegalAccessException
               | IllegalArgumentException
               | NullPointerException
@@ -85,6 +90,21 @@ public class ReflectionUtils {
         if (field.getType().isAssignableFrom(arrayListType)) {
           try {
             field.set(instantiatedClass, new ArrayList<>());
+          } catch (IllegalAccessException
+              | IllegalArgumentException
+              | NullPointerException
+              | ExceptionInInitializerError ex) {
+            throw new OblivionException(
+                String.format(
+                    "Error setting field '%s' in class '%s': %s",
+                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
+          }
+        }
+
+        if (field.getType().isAssignableFrom(booleanType)
+            || field.getType().isAssignableFrom(boxedBooleanType)) {
+          try {
+            field.set(instantiatedClass, true);
           } catch (IllegalAccessException
               | IllegalArgumentException
               | NullPointerException
