@@ -5,7 +5,7 @@ Going in-depth on how Spring's `@Autowired` works, so I'm building a custom DI f
 ### Injection Mechanisms
 
 - **Field Injection**
-- **Constructor Injection** *(not yet tweaked for multiple constructors with arguments)*
+- **Constructor Injection**
 - **Unique Bean Naming** *(assign unique names to instances)*
 - **Prototype Beans** *(create independent instances even when using the same identifier)*
 - **Basic Bean Lifecycle Management**
@@ -16,7 +16,7 @@ Going in-depth on how Spring's `@Autowired` works, so I'm building a custom DI f
 - `@OblivionService` - Marks a class as a service; searches for constructors and injects dependencies
 - `@OblivionPrototype` - Defines a prototype bean *(each request gets a new instance)*
 - `@OblivionConstructorInject` - Defines a specific constructor to be injected. If none is specified, the first constructor is injected by default.
-    it can receive an optional `name = String` property that can be used to instantiate a class with different constructors when defining a prototype bean.
+    It can receive an optional `name = String` property that can be used to instantiate a class with different constructors when defining a prototype bean.
 - `@OblivionPreInitialization` - Executes a method before the bean is fully initialized *(before field injections)*
 - `@OblivionPostConstruct` - Executes a method immediately after dependencies are injected *(for basic setup)*
 - `@OblivionPostInitialization` - Executes a method after full initialization *(ideal for advanced setups like starting background tasks)*
@@ -47,7 +47,7 @@ Manage the lifecycle of a bean in phases.
 
 ### Implemented Lifecycle extra features
 
-- Ordered Lifecycle methods using `order = N`
+- Ordered Lifecycle methods using `order = N`. Here the second method will be executed first:
 
 ```java
 @OblivionPreInitialization(order = 2)
