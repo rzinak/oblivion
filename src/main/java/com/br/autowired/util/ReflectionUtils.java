@@ -18,6 +18,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -29,25 +30,22 @@ public class ReflectionUtils {
   // function in case there are too many types
   public static void initializeFields(Object instantiatedClass) throws Exception {
     Class<?> clazz = instantiatedClass.getClass();
+    Class<?> booleanType = boolean.class;
+    Class<?> boxedBooleanType = Boolean.class;
     Class<?> integerType = int.class;
     Class<?> boxedIntegerType = Integer.class;
     Class<?> stringType = String.class;
-    Class<?> arrayListType = ArrayList.class;
-    Class<?> booleanType = boolean.class;
-    Class<?> boxedBooleanType = Boolean.class;
     Class<?> listType = List.class;
     Class<?> mapType = Map.class;
-    Class<?> objectType = Object.class;
-
-    Field[] f = clazz.getDeclaredFields();
 
     for (Field field : clazz.getDeclaredFields()) {
       if (field.isAnnotationPresent(OblivionField.class)) {
         field.setAccessible(true);
 
-        if (field.getType().isAssignableFrom(integerType)) {
+        if (field.getType().isAssignableFrom(booleanType)
+            || field.getType().isAssignableFrom(boxedBooleanType)) {
           try {
-            field.set(instantiatedClass, 0);
+            field.set(instantiatedClass, true);
           } catch (IllegalAccessException
               | IllegalArgumentException
               | NullPointerException
@@ -59,7 +57,8 @@ public class ReflectionUtils {
           }
         }
 
-        if (field.getType().isAssignableFrom(boxedIntegerType)) {
+        if (field.getType().isAssignableFrom(integerType)
+            || field.getType().isAssignableFrom(boxedIntegerType)) {
           try {
             field.set(instantiatedClass, 0);
           } catch (IllegalAccessException
@@ -75,7 +74,7 @@ public class ReflectionUtils {
 
         if (field.getType().isAssignableFrom(stringType)) {
           try {
-            field.set(instantiatedClass, "Oblivion");
+            field.set(instantiatedClass, "");
           } catch (IllegalAccessException
               | IllegalArgumentException
               | NullPointerException
@@ -87,7 +86,9 @@ public class ReflectionUtils {
           }
         }
 
-        if (field.getType().isAssignableFrom(arrayListType)) {
+        // NOTE: here i instantiate an ArrayList by default, later i can make this
+        // more dynamic, to allow different implementations
+        if (field.getType().isAssignableFrom(listType)) {
           try {
             field.set(instantiatedClass, new ArrayList<>());
           } catch (IllegalAccessException
@@ -101,10 +102,11 @@ public class ReflectionUtils {
           }
         }
 
-        if (field.getType().isAssignableFrom(booleanType)
-            || field.getType().isAssignableFrom(boxedBooleanType)) {
+        // NOTE: here i instantiate a HashMap by default, later i can make this
+        // more dynamic, to allow different implementations
+        if (field.getType().isAssignableFrom(mapType)) {
           try {
-            field.set(instantiatedClass, true);
+            field.set(instantiatedClass, new HashMap<>());
           } catch (IllegalAccessException
               | IllegalArgumentException
               | NullPointerException

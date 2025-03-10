@@ -38,6 +38,12 @@ public class App {
       taskService.setIsAvailable(false);
       System.out.println("CURRENT TASK SERVICE STRING VAL: " + taskService.getTaskName());
       System.out.println("CURRENT TASK SERVICE BOOL VAL: " + taskService.getIsAvailable());
+      System.out.println("CURRENT TASK SERVICE BOXED BOOL VAL: " + taskService.getIsRegistered());
+      System.out.println("CURRENT TASK SERVICE NORMAL INT VAL: " + taskService.getNormalInt());
+      System.out.println("CURRENT TASK SERVICE BOXED INT VAL: " + taskService.getBoxedInt());
+      System.out.println("CURRENT TASK SERVICE STRING VAL: " + taskService.getStringText());
+      System.out.println("CURRENT TASK SERVICE LIST VAL: " + taskService.getListString());
+      System.out.println("CURRENT TASK SERVICE MAP VAL: " + taskService.getMapStringString());
 
       User user1 = new User("renan", 24);
       // testUser.addUser(user1);
