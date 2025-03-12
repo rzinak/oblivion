@@ -28,11 +28,31 @@ Going in-depth on how Spring's `@Autowired` works, so I'm building a custom DI f
 
 Beans are instantiated automatically and can be used normally.
 
+Added a new annotation, `@OblivionWire`, to initialize beans. Instantiation was simplified to remove manual bean fetching, so we only need to do this:
+
+```java
+@OblivionWire
+TaskService taskService;
+
+```
+
+The bean will be created using the identifier name to distinguish it from other beans, similar to the previous approach where we had to pass them manually. The way it works is the same, but now there's no need to do that manually.
+
+*@OblivionWire* takes an optional `constructorToInject = STRING`, with the desired constructor to be injected:
+
+```java
+@OblivionWire(constructorToInject = "CONSTRUCTOR IDENTIFIER")
+TaskService taskService;
+
+```
+
+The name of the constructor is define inside it's class, with an annotation `@OblivionConstructorInject(name = STRING)`. So the name you give it here, is the same you pass to *@OblivionWire*.
+
 ---
 
 ### Lifecycle Callbacks
 
-Manage the lifecycle of a bean in phases.
+Implemented an easy way to manage the lifecycle of a bean in phases.
 
 ### Implemented Lifecycle Phases
 
@@ -84,6 +104,7 @@ Haven't figured out an approach yet, but will do it eventually because it looks 
 
 ## Other Things To Do
 
+- **Improve this readme**
 - **Better error handling**
 - **Improve resource cleanup** for `@OblivionPreDestroy` (e.g., closing DB connections)
 - **Handle circular dependencies** (maybe add a custom cleanup phase for scalability)

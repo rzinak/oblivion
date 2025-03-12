@@ -19,6 +19,8 @@ public class UserService {
 
   // @Oblivion private Integer myFavNumber;
 
+  public UserService() {}
+
   public void addUser(User user) {
     users.add(user);
   }

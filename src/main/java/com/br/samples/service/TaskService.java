@@ -14,7 +14,6 @@ public class TaskService {
 
   @OblivionField private String taskName;
 
-  // testing fields below
   @OblivionField private String stringText;
 
   @OblivionField private boolean isAvailable;
