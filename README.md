@@ -46,7 +46,7 @@ TaskService taskService;
 
 ```
 
-The name of the constructor is define inside it's class, with an annotation `@OblivionConstructorInject(name = STRING)`. So the name you give it here, is the same you pass to *@OblivionWire*.
+The name of the constructor is defined inside it's class, with an annotation `@OblivionConstructorInject(name = STRING)` above the constructor. So the name you give it there, is the same you pass to *@OblivionWire*.
 
 ---
 
