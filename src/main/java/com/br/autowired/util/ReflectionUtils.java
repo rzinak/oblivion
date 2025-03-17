@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class ReflectionUtils {
   // TODO: ADD SUPPORT FOR MORE TYPES HERE
@@ -198,14 +199,56 @@ public class ReflectionUtils {
   }
 
   private static List<String> executeAnnotatedMethods(
-      Method[] methods, Object objectToRun, Class<?> annotationClass) {
+      Method[] methods,
+      Object objectToRun,
+      Class<? extends Annotation> annotationClass,
+      ThreadPoolExecutor threadExecutor) {
 
     List<String> executionErrors = new ArrayList<>();
 
     for (Method m : methods) {
       if (m.isAnnotationPresent((Class<? extends Annotation>) annotationClass)) {
         try {
-          m.invoke(objectToRun);
+          // NOTE: this check is for methods that cannot be async, these will have
+          // a null value passed instead of a ThreadPoolExecutor
+          if (threadExecutor != null) {
+            Annotation annotation = m.getAnnotation(annotationClass);
+            if (annotation != null) {
+              try {
+                Method asyncMethod = annotationClass.getMethod("async");
+                boolean isAsync = (Boolean) asyncMethod.invoke(annotation);
+                if (isAsync) {
+                  Runnable asyncTask =
+                      () -> {
+                        Thread currThread = Thread.currentThread();
+                        System.out.println(
+                            "curr thread: "
+                                + currThread.getName()
+                                + ", is daemon: "
+                                + currThread.isDaemon()
+                                + ", and is running this method: "
+                                + m.getName());
+                        try {
+                          m.invoke(objectToRun);
+                        } catch (IllegalAccessException e) {
+                          e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                          e.printStackTrace();
+                        }
+                      };
+
+                  threadExecutor.submit(asyncTask);
+                } else if (!isAsync) {
+                  m.invoke(objectToRun);
+                }
+              } catch (Exception ex) {
+                throw new Exception("Failed to extract async value from method: " + m.getName());
+              }
+            }
+          } else {
+            m.invoke(objectToRun);
+          }
+
         } catch (Exception ex) {
           executionErrors.add(
               String.format(
@@ -393,7 +436,8 @@ public class ReflectionUtils {
     }
 
     List<String> executionErrors =
-        executeAnnotatedMethods(methodsValidatedByCond, clazz, OblivionPreInitialization.class);
+        executeAnnotatedMethods(
+            methodsValidatedByCond, clazz, OblivionPreInitialization.class, null);
 
     if (!executionErrors.isEmpty()) {
       throw new OblivionException(
@@ -401,7 +445,8 @@ public class ReflectionUtils {
     }
   }
 
-  public static void runPostConstructMethods(Class<?> clazz, Object objectToRun)
+  public static void runPostConstructMethods(
+      Class<?> clazz, Object objectToRun, ThreadPoolExecutor threadExecutor)
       throws OblivionException {
     if (clazz == null) {
       throw new IllegalArgumentException("Class reference cannot be null");
@@ -432,7 +477,7 @@ public class ReflectionUtils {
                 b.getAnnotation(OblivionPostConstruct.class).order()));
 
     List<String> methodValidationErrors =
-        validateMethods(methods, clazz, OblivionPostConstruct.class);
+        validateMethods(methodsValidatedByCond, clazz, OblivionPostConstruct.class);
 
     if (!methodValidationErrors.isEmpty()) {
       throw new OblivionException(
@@ -441,7 +486,8 @@ public class ReflectionUtils {
     }
 
     List<String> executionErrors =
-        executeAnnotatedMethods(methods, objectToRun, OblivionPostConstruct.class);
+        executeAnnotatedMethods(
+            methodsValidatedByCond, objectToRun, OblivionPostConstruct.class, threadExecutor);
 
     if (!executionErrors.isEmpty()) {
       throw new OblivionException(
@@ -449,7 +495,8 @@ public class ReflectionUtils {
     }
   }
 
-  public static void runPostInitializationMethods(Class<?> clazz, Object objectToRun)
+  public static void runPostInitializationMethods(
+      Class<?> clazz, Object objectToRun, ThreadPoolExecutor threadExecutor)
       throws OblivionException {
     if (clazz == null) {
       throw new IllegalArgumentException("Class referene cannot be null");
@@ -480,7 +527,7 @@ public class ReflectionUtils {
                 b.getAnnotation(OblivionPostInitialization.class).order()));
 
     List<String> methodValidationErrors =
-        validateMethods(methods, clazz, OblivionPostInitialization.class);
+        validateMethods(methodsValidatedByCond, clazz, OblivionPostInitialization.class);
 
     if (!methodValidationErrors.isEmpty()) {
       throw new OblivionException(
@@ -489,7 +536,8 @@ public class ReflectionUtils {
     }
 
     List<String> executionErrors =
-        executeAnnotatedMethods(methods, objectToRun, OblivionPostInitialization.class);
+        executeAnnotatedMethods(
+            methodsValidatedByCond, objectToRun, OblivionPostInitialization.class, threadExecutor);
 
     if (!executionErrors.isEmpty()) {
       throw new OblivionException(
@@ -529,6 +577,8 @@ public class ReflectionUtils {
     }
   }
 
+  // NOTE: this one can be async, but gotta be careful with this one, because once the JVM shuts
+  // down, it also terminates the threads
   public static void runPostShutdownMethod(Object objectToRun, Method methodToRun)
       throws OblivionException {
     if (objectToRun == null || methodToRun == null) {

@@ -15,10 +15,6 @@ import java.util.List;
 public class UserService {
   @OblivionField private List<User> users;
 
-  // @Oblivion private String myFavColor;
-
-  // @Oblivion private Integer myFavNumber;
-
   public UserService() {}
 
   public void addUser(User user) {

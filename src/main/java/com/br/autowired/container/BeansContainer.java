@@ -8,16 +8,30 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class BeansContainer {
   private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
   private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
 
-  // lifecylce methods
+  // lifecycle methods
   private List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
   private List<Pair<Object, Method>> preShutdownMethods = new ArrayList<>();
   private List<Pair<Object, Method>> postShutdownMethods = new ArrayList<>();
+
+  // TODO: move these values to a config file
+  int corePoolSize = 2;
+  int maxPoolSize = 5;
+  long keepAliveTime = 3;
+  TimeUnit unit = TimeUnit.SECONDS;
+  BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(10);
+
+  public ThreadPoolExecutor threadExecutor =
+      new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, unit, workQueue);
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
@@ -36,8 +50,26 @@ public class BeansContainer {
     return null;
   }
 
-  public Object getPrototypeBean(String identifier, BeansContainer container) throws Exception {
+  public Object getPrototypeBean(String identifier, BeansContainer beansContainer)
+      throws Exception {
     try {
+      // NOTE: im using allowCoreThreadsTimeOut because by default core threads never terminate,
+      // even if they are idle, because as the name suggests, the pool mantains a "core" minimum
+      // number of threads.
+      //
+      // NOTE: from what ive researched a little bit, recreating threads can introduce some
+      // overhead,
+      // but since im designing this for small actions, it shouldnt even be noticeable.
+      //
+      // NOTE: another thing is that if core threads are terminated when timing them out, new tasks
+      // can have
+      // a small delay to run, since we gotta wait for new threads to be created, but again, for
+      // smalls
+      // tasks this shouldnt be a problem.
+      //
+      // NOTE: the last thing is that if we add a time out to them, they are no longer "core"
+      // in essence, but its more of a conceptual stuff, so i dont care
+      beansContainer.threadExecutor.allowCoreThreadTimeOut(true);
       Class<?> prototypeBeanClass = prototypeBeans.get(identifier).getPrototypeClass();
       Class<?>[] requiredParams = prototypeBeans.get(identifier).getRequiredParams();
       Object[] requiredObjects = prototypeBeans.get(identifier).getRequiredObjects();
@@ -49,22 +81,27 @@ public class BeansContainer {
         for (Constructor<?> ctor : ctors) {
           if (ctor.getParameterCount() == 0) {
             Object initPrototypeBean = prototypeBeanClass.newInstance();
-            ReflectionUtils.runPostConstructMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.runPostConstructMethods(
+                prototypeBeanClass, initPrototypeBean, threadExecutor);
             ReflectionUtils.initializeFields(initPrototypeBean);
-            ReflectionUtils.runPostInitializationMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.runPostInitializationMethods(
+                prototypeBeanClass, initPrototypeBean, threadExecutor);
+
             ReflectionUtils.registerPersistentBeanLifecycles(
-                prototypeBeanClass, initPrototypeBean, container);
+                prototypeBeanClass, initPrototypeBean, beansContainer);
             return initPrototypeBean;
           } else {
             Object initPrototypeBean =
                 prototypeBeanClass
                     .getDeclaredConstructor(requiredParams)
                     .newInstance(requiredObjects);
-            ReflectionUtils.runPostConstructMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.runPostConstructMethods(
+                prototypeBeanClass, initPrototypeBean, threadExecutor);
             ReflectionUtils.initializeFields(initPrototypeBean);
-            ReflectionUtils.runPostInitializationMethods(prototypeBeanClass, initPrototypeBean);
+            ReflectionUtils.runPostInitializationMethods(
+                prototypeBeanClass, initPrototypeBean, beansContainer.threadExecutor);
             ReflectionUtils.registerPersistentBeanLifecycles(
-                prototypeBeanClass, initPrototypeBean, container);
+                prototypeBeanClass, initPrototypeBean, beansContainer);
             return initPrototypeBean;
           }
         }
@@ -151,5 +188,9 @@ public class BeansContainer {
 
   public void clearPrototypeBeansMap() {
     this.prototypeBeans.clear();
+  }
+
+  public void shutdownThreadPool() {
+    threadExecutor.shutdown();
   }
 }

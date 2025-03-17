@@ -18,7 +18,6 @@ public class SingletonBean {
       String identifier, Class<T> clazz, BeansContainer beansContainer) throws Exception {
     if (clazz.isAnnotationPresent(OblivionService.class)) {
       Constructor<?>[] ctors = clazz.getDeclaredConstructors();
-
       try {
         ReflectionUtils.runPreInitializationMethods(clazz);
       } catch (Exception ex) {
@@ -52,10 +51,10 @@ public class SingletonBean {
       if (ctor.getParameterCount() == 0) {
         // NOTE: newInstance is deprecated, gotta see other way to do it
         T init = clazz.newInstance();
-        ReflectionUtils.runPostConstructMethods(clazz, init);
+        ReflectionUtils.runPostConstructMethods(clazz, init, beansContainer.threadExecutor);
         beansContainer.registerSingletonBean(identifier, init);
         ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
-        ReflectionUtils.runPostInitializationMethods(clazz, init);
+        ReflectionUtils.runPostInitializationMethods(clazz, init, beansContainer.threadExecutor);
         ReflectionUtils.registerPersistentBeanLifecycles(clazz, init, beansContainer);
 
       } else {
@@ -71,7 +70,8 @@ public class SingletonBean {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
-            ReflectionUtils.runPostConstructMethods(clazz, initParam);
+            ReflectionUtils.runPostConstructMethods(
+                clazz, initParam, beansContainer.threadExecutor);
             beansContainer.registerSingletonBean(paramName, initParam);
             ReflectionUtils.initializeFields(beansContainer.getSingletonBean(paramName));
             requiredParams.add(paramType);
@@ -91,9 +91,10 @@ public class SingletonBean {
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
           beansContainer.registerSingletonBean(identifier, initClass);
-          ReflectionUtils.runPostConstructMethods(clazz, initClass);
+          ReflectionUtils.runPostConstructMethods(clazz, initClass, beansContainer.threadExecutor);
           ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
-          ReflectionUtils.runPostInitializationMethods(clazz, initClass);
+          ReflectionUtils.runPostInitializationMethods(
+              clazz, initClass, beansContainer.threadExecutor);
           ReflectionUtils.registerPersistentBeanLifecycles(clazz, initClass, beansContainer);
         } catch (NoSuchMethodException
             | InstantiationException

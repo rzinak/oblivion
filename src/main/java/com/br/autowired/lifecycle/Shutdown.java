@@ -8,6 +8,7 @@ import com.br.autowired.container.Pair;
 import com.br.autowired.exception.OblivionException;
 import com.br.autowired.util.ReflectionUtils;
 import java.lang.reflect.Method;
+import java.util.Set;
 
 public class Shutdown {
   public void attachShutdown(BeansContainer container) {
@@ -16,6 +17,11 @@ public class Shutdown {
             new Thread() {
               @Override
               public void run() {
+                Set<Thread> threads = Thread.getAllStackTraces().keySet();
+                for (Thread t : threads) {
+                  System.out.println("thread: " + t + ", state: " + t.getState());
+                }
+
                 try {
                   ReflectionUtils.validateAndSortMethods(
                       container.getPreDestroyMethods(), OblivionPreDestroy.class);
@@ -75,6 +81,7 @@ public class Shutdown {
                 }
 
                 container.clearPostShutdownMap();
+                container.shutdownThreadPool();
               }
             });
   }

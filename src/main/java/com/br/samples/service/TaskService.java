@@ -1,6 +1,7 @@
 package com.br.samples.service;
 
 import com.br.autowired.annotations.OblivionField;
+import com.br.autowired.annotations.OblivionPostInitialization;
 import com.br.autowired.annotations.OblivionPrototype;
 import com.br.autowired.annotations.OblivionService;
 import com.br.samples.model.User;
@@ -35,6 +36,16 @@ public class TaskService {
   public TaskService(String taskName, UserService userService) {
     this.taskName = taskName;
     this.userService = userService;
+  }
+
+  @OblivionPostInitialization(async = true)
+  public void sayHi() {
+    System.out.println("TASK SERVICE PROTOTYPE | Hi PostInitialization async");
+  }
+
+  @OblivionPostInitialization()
+  public void sayHiAgain() {
+    System.out.println("TASK SERVICE PROTOTYPE | Hi again PostInitialization NOT ASYNC");
   }
 
   public String getTaskName() {

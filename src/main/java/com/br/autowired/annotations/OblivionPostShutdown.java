@@ -11,4 +11,6 @@ public @interface OblivionPostShutdown {
   public int order() default 0;
 
   public String cond() default "";
+
+  public boolean async() default false;
 }
