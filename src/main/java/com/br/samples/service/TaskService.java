@@ -1,9 +1,9 @@
 package com.br.samples.service;
 
-import com.br.autowired.annotations.OblivionField;
-import com.br.autowired.annotations.OblivionPostInitialization;
-import com.br.autowired.annotations.OblivionPrototype;
-import com.br.autowired.annotations.OblivionService;
+import com.br.oblivion.annotations.OblivionField;
+import com.br.oblivion.annotations.OblivionPostInitialization;
+import com.br.oblivion.annotations.OblivionPrototype;
+import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.model.User;
 import java.util.List;
 import java.util.Map;

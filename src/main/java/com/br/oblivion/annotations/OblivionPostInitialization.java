@@ -1,4 +1,4 @@
-package com.br.autowired.annotations;
+package com.br.oblivion.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

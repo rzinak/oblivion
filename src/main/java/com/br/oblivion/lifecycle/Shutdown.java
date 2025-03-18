@@ -1,12 +1,12 @@
-package com.br.autowired.lifecycle;
+package com.br.oblivion.lifecycle;
 
-import com.br.autowired.annotations.OblivionPostShutdown;
-import com.br.autowired.annotations.OblivionPreDestroy;
-import com.br.autowired.annotations.OblivionPreShutdown;
-import com.br.autowired.container.BeansContainer;
-import com.br.autowired.container.Pair;
-import com.br.autowired.exception.OblivionException;
-import com.br.autowired.util.ReflectionUtils;
+import com.br.oblivion.annotations.OblivionPostShutdown;
+import com.br.oblivion.annotations.OblivionPreDestroy;
+import com.br.oblivion.annotations.OblivionPreShutdown;
+import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.container.Pair;
+import com.br.oblivion.exception.OblivionException;
+import com.br.oblivion.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.util.Set;
 

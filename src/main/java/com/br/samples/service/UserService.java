@@ -1,13 +1,13 @@
 package com.br.samples.service;
 
-import com.br.autowired.annotations.OblivionField;
-import com.br.autowired.annotations.OblivionPostConstruct;
-import com.br.autowired.annotations.OblivionPostInitialization;
-import com.br.autowired.annotations.OblivionPostShutdown;
-import com.br.autowired.annotations.OblivionPreDestroy;
-import com.br.autowired.annotations.OblivionPreInitialization;
-import com.br.autowired.annotations.OblivionPreShutdown;
-import com.br.autowired.annotations.OblivionService;
+import com.br.oblivion.annotations.OblivionField;
+import com.br.oblivion.annotations.OblivionPostConstruct;
+import com.br.oblivion.annotations.OblivionPostInitialization;
+import com.br.oblivion.annotations.OblivionPostShutdown;
+import com.br.oblivion.annotations.OblivionPreDestroy;
+import com.br.oblivion.annotations.OblivionPreInitialization;
+import com.br.oblivion.annotations.OblivionPreShutdown;
+import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.model.User;
 import java.util.List;
 

@@ -3,7 +3,7 @@
 // i treat them as persistent because they are stored, but are only executed when
 // things are about to shutdown. So we "define" them early, but use only later.
 
-package com.br.autowired.container;
+package com.br.oblivion.container;
 
 public class Pair<L, R> {
   private L l;

@@ -1,4 +1,4 @@
-package com.br.autowired.container;
+package com.br.oblivion.container;
 
 public class PrototypeBeanMetadata {
   private Class<?> prototypeClass;

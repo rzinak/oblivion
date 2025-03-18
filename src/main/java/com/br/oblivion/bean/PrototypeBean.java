@@ -1,11 +1,11 @@
-package com.br.autowired.bean;
+package com.br.oblivion.bean;
 
-import com.br.autowired.annotations.OblivionConstructorInject;
-import com.br.autowired.annotations.OblivionPrototype;
-import com.br.autowired.container.BeansContainer;
-import com.br.autowired.container.PrototypeBeanMetadata;
-import com.br.autowired.exception.OblivionException;
-import com.br.autowired.util.ReflectionUtils;
+import com.br.oblivion.annotations.OblivionConstructorInject;
+import com.br.oblivion.annotations.OblivionPrototype;
+import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.container.PrototypeBeanMetadata;
+import com.br.oblivion.exception.OblivionException;
+import com.br.oblivion.util.ReflectionUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

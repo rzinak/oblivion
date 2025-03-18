@@ -1,7 +1,7 @@
-package com.br.autowired.container;
+package com.br.oblivion.container;
 
-import com.br.autowired.exception.OblivionException;
-import com.br.autowired.util.ReflectionUtils;
+import com.br.oblivion.exception.OblivionException;
+import com.br.oblivion.util.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

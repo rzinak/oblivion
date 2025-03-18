@@ -1,4 +1,4 @@
-package com.br.autowired.exception;
+package com.br.oblivion.exception;
 
 public class OblivionException extends Exception {
   public OblivionException(String message) {

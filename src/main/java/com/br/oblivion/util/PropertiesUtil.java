@@ -1,6 +1,6 @@
-package com.br.autowired.util;
+package com.br.oblivion.util;
 
-import com.br.autowired.exception.OblivionException;
+import com.br.oblivion.exception.OblivionException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;

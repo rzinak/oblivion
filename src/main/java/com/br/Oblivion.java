@@ -1,33 +1,19 @@
 package com.br;
 
-import com.br.autowired.annotations.OblivionWire;
-import com.br.autowired.bean.PrototypeBean;
-import com.br.autowired.bean.SingletonBean;
-import com.br.autowired.container.BeansContainer;
-import com.br.autowired.lifecycle.Shutdown;
-import com.br.autowired.util.Inject;
+import com.br.oblivion.annotations.OblivionWire;
+import com.br.oblivion.util.OblivionSetup;
 import com.br.samples.service.TaskService;
 import com.br.samples.service.UserService;
 
-public class App {
+public class Oblivion {
 
   @OblivionWire UserService userService;
   @OblivionWire TaskService taskService;
 
   public static void main(String[] args) throws Exception {
-    Shutdown shutdownHook = new Shutdown();
-    BeansContainer beansContainer = new BeansContainer();
-    shutdownHook.attachShutdown(beansContainer);
-    SingletonBean singletonBean = new SingletonBean();
-    PrototypeBean prototypeBean = new PrototypeBean();
-
     try {
-
-      App app = new App();
-
-      Inject.inject(app, singletonBean, prototypeBean, beansContainer);
-
-      app.testing();
+      Oblivion app = new Oblivion();
+      OblivionSetup.init(app);
     } catch (InterruptedException ex) {
       ex.printStackTrace();
     }

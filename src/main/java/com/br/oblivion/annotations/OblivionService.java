@@ -1,4 +1,4 @@
-package com.br.autowired.annotations;
+package com.br.oblivion.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface OblivionPrototype {
+public @interface OblivionService {
   public String key() default "";
 }

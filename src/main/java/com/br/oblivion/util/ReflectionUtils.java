@@ -1,15 +1,15 @@
-package com.br.autowired.util;
+package com.br.oblivion.util;
 
-import com.br.autowired.annotations.OblivionField;
-import com.br.autowired.annotations.OblivionPostConstruct;
-import com.br.autowired.annotations.OblivionPostInitialization;
-import com.br.autowired.annotations.OblivionPostShutdown;
-import com.br.autowired.annotations.OblivionPreDestroy;
-import com.br.autowired.annotations.OblivionPreInitialization;
-import com.br.autowired.annotations.OblivionPreShutdown;
-import com.br.autowired.container.BeansContainer;
-import com.br.autowired.container.Pair;
-import com.br.autowired.exception.OblivionException;
+import com.br.oblivion.annotations.OblivionField;
+import com.br.oblivion.annotations.OblivionPostConstruct;
+import com.br.oblivion.annotations.OblivionPostInitialization;
+import com.br.oblivion.annotations.OblivionPostShutdown;
+import com.br.oblivion.annotations.OblivionPreDestroy;
+import com.br.oblivion.annotations.OblivionPreInitialization;
+import com.br.oblivion.annotations.OblivionPreShutdown;
+import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.container.Pair;
+import com.br.oblivion.exception.OblivionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

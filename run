@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp target/autowired-1.0-SNAPSHOT.jar com.br.App
+java -cp target/oblivion-1.0.jar com.br.Oblivion
