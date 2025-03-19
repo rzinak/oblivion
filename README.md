@@ -42,10 +42,12 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 *Note that this is now 100% the way I expect Oblivion to be used in the future, it's still in a very early development stage and implementation in external apps is very limited.*
 
-1. Add Dependencies
+1. **Add Dependencies**
+
 First you gotta add Oblivion as a dependency in your `pom.xml` or `build.gradle`. *For now, you can install it as a local dependency.*
 
 2. **Main File Setup**
+
 Here's an example of how you can setup and initialize Oblivion in a simple application:
 
 ```java
@@ -104,6 +106,7 @@ The name of the constructor is defined inside it's class, with an annotation `@O
 - `OblivionSetup.init(app)` initializes the DI container and wires up the necessary dependencies.
 
 3. **Service Layer**
+
 The service class uses constructor-based injection to manage dependencies:
 
 ```java
