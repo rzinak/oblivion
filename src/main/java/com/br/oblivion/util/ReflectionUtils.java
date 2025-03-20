@@ -446,7 +446,7 @@ public class ReflectionUtils {
   }
 
   public static void runPostConstructMethods(
-      Class<?> clazz, Object objectToRun, ThreadPoolExecutor threadExecutor)
+      Class<?> clazz, Object objectToRun, ThreadPoolExecutor threadPoolExecutor)
       throws OblivionException {
     if (clazz == null) {
       throw new IllegalArgumentException("Class reference cannot be null");
@@ -487,7 +487,7 @@ public class ReflectionUtils {
 
     List<String> executionErrors =
         executeAnnotatedMethods(
-            methodsValidatedByCond, objectToRun, OblivionPostConstruct.class, threadExecutor);
+            methodsValidatedByCond, objectToRun, OblivionPostConstruct.class, threadPoolExecutor);
 
     if (!executionErrors.isEmpty()) {
       throw new OblivionException(

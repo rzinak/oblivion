@@ -12,10 +12,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class SingletonBean {
   public <T> void initializeSingletonBean(
-      String identifier, Class<T> clazz, BeansContainer beansContainer) throws Exception {
+      String identifier,
+      Class<T> clazz,
+      BeansContainer beansContainer,
+      ThreadPoolExecutor threadPoolExecutor)
+      throws Exception {
     if (clazz.isAnnotationPresent(OblivionService.class)) {
       Constructor<?>[] ctors = clazz.getDeclaredConstructors();
       try {
@@ -36,25 +41,29 @@ public class SingletonBean {
       // NOTE: constructors are filtered to find the one with the @OblivionInject
       // annotation, if no one is found, it uses the first constructor inside the class
       if (constructorToInject.isEmpty()) {
-        injectConstructor(ctors[0], identifier, clazz, beansContainer);
+        injectConstructor(ctors[0], identifier, clazz, beansContainer, threadPoolExecutor);
       } else {
         Constructor<?> ctor = constructorToInject.orElse(ctors[0]);
-        injectConstructor(ctor, identifier, clazz, beansContainer);
+        injectConstructor(ctor, identifier, clazz, beansContainer, threadPoolExecutor);
       }
     }
   }
 
   private <T> void injectConstructor(
-      Constructor<?> ctor, String identifier, Class<T> clazz, BeansContainer beansContainer)
+      Constructor<?> ctor,
+      String identifier,
+      Class<T> clazz,
+      BeansContainer beansContainer,
+      ThreadPoolExecutor threadPoolExecutor)
       throws Exception {
     try {
       if (ctor.getParameterCount() == 0) {
         // NOTE: newInstance is deprecated, gotta see other way to do it
         T init = clazz.newInstance();
-        ReflectionUtils.runPostConstructMethods(clazz, init, beansContainer.threadExecutor);
+        ReflectionUtils.runPostConstructMethods(clazz, init, threadPoolExecutor);
         beansContainer.registerSingletonBean(identifier, init);
         ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
-        ReflectionUtils.runPostInitializationMethods(clazz, init, beansContainer.threadExecutor);
+        ReflectionUtils.runPostInitializationMethods(clazz, init, threadPoolExecutor);
         ReflectionUtils.registerPersistentBeanLifecycles(clazz, init, beansContainer);
 
       } else {
@@ -70,8 +79,7 @@ public class SingletonBean {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
             Object initParam = paramType.newInstance();
-            ReflectionUtils.runPostConstructMethods(
-                clazz, initParam, beansContainer.threadExecutor);
+            ReflectionUtils.runPostConstructMethods(clazz, initParam, threadPoolExecutor);
             beansContainer.registerSingletonBean(paramName, initParam);
             ReflectionUtils.initializeFields(beansContainer.getSingletonBean(paramName));
             requiredParams.add(paramType);
@@ -91,10 +99,9 @@ public class SingletonBean {
           T initClass =
               clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
           beansContainer.registerSingletonBean(identifier, initClass);
-          ReflectionUtils.runPostConstructMethods(clazz, initClass, beansContainer.threadExecutor);
+          ReflectionUtils.runPostConstructMethods(clazz, initClass, threadPoolExecutor);
           ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
-          ReflectionUtils.runPostInitializationMethods(
-              clazz, initClass, beansContainer.threadExecutor);
+          ReflectionUtils.runPostInitializationMethods(clazz, initClass, threadPoolExecutor);
           ReflectionUtils.registerPersistentBeanLifecycles(clazz, initClass, beansContainer);
         } catch (NoSuchMethodException
             | InstantiationException

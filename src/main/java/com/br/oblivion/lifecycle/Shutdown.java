@@ -8,20 +8,15 @@ import com.br.oblivion.container.Pair;
 import com.br.oblivion.exception.OblivionException;
 import com.br.oblivion.util.ReflectionUtils;
 import java.lang.reflect.Method;
-import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class Shutdown {
-  public void attachShutdown(BeansContainer container) {
+  public void attachShutdown(BeansContainer container, ThreadPoolExecutor threadPoolExecutor) {
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread() {
               @Override
               public void run() {
-                Set<Thread> threads = Thread.getAllStackTraces().keySet();
-                for (Thread t : threads) {
-                  System.out.println("thread: " + t + ", state: " + t.getState());
-                }
-
                 try {
                   ReflectionUtils.validateAndSortMethods(
                       container.getPreDestroyMethods(), OblivionPreDestroy.class);
@@ -81,7 +76,7 @@ public class Shutdown {
                 }
 
                 container.clearPostShutdownMap();
-                container.shutdownThreadPool();
+                threadPoolExecutor.shutdown();
               }
             });
   }
