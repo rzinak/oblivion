@@ -13,8 +13,18 @@ import java.util.concurrent.TimeUnit;
 
 public class OblivionSetup {
 
-  public static void init(Object appInstance) throws Exception {
+  public static void init() throws Exception {
     try {
+      Object appInstance = null;
+      StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+
+      for (StackTraceElement sTraceElement : stackTraceElements) {
+        if (sTraceElement.getMethodName().equals("main")) {
+          Class<?> mainClass = Class.forName(sTraceElement.getClassName());
+          appInstance = mainClass.newInstance();
+        }
+      }
+
       Shutdown shutdownHook = new Shutdown();
       BeansContainer beansContainer = new BeansContainer();
       ThreadPoolExecutor threadPoolExecutor = setupThreadPool();

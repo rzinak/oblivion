@@ -188,4 +188,5 @@ Configurations are made in the `oblivion.properties` file like this: `KEY=VALUE`
 
 - **Handle Circular Dependencies** (more scalable DI management).
 - **Improve Resource Cleanup** (like closing DB connections).
-- **Custom Lifecycle Phases** (Let users define custom lifecycle annotations).
+- **Custom Lifecycle Phases** (let users define custom lifecycle annotations).
+- **Improve app's entry point detection** (config files, manifest files... but for now it's alright).

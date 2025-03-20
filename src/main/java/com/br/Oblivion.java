@@ -12,8 +12,7 @@ public class Oblivion {
 
   public static void main(String[] args) throws Exception {
     try {
-      Oblivion app = new Oblivion();
-      OblivionSetup.init(app);
+      OblivionSetup.init();
     } catch (InterruptedException ex) {
       ex.printStackTrace();
     }
