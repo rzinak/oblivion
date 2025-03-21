@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadPoolExecutor;
 
+// TODO: gotta refactor the 'init inner deps' logic
 public class SingletonBean {
   public <T> void initializeSingletonBean(
       String identifier,
@@ -74,16 +75,75 @@ public class SingletonBean {
         // required objects to use inside newInstance
         List<Object> requiredObjects = new ArrayList<>();
 
+        // required inner dependencies
+        List<Class<?>> requiredInnerParams = new ArrayList<>();
+        List<Object> requiredInnerObjects = new ArrayList<>();
+
+        Class<?> currInnerClass = null;
+
         for (Parameter p : params) {
           try {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
-            Object initParam = paramType.newInstance();
+
+            currInnerClass = paramType;
+
+            Constructor<?>[] innerCtors = paramType.getDeclaredConstructors();
+
+            for (Constructor<?> c : innerCtors) {
+              Parameter[] innerParams = c.getParameters();
+
+              for (Parameter innerP : innerParams) {
+                Class<?> innerParamType = innerP.getType();
+                String innerParamName = innerP.getType().getName();
+                Object initInnerParam = innerParamType.newInstance();
+                ReflectionUtils.runPostConstructMethods(
+                    innerParamType, initInnerParam, threadPoolExecutor);
+                beansContainer.registerSingletonBean(innerParamName, initInnerParam);
+                ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerParamName));
+                requiredInnerParams.add(innerParamType);
+                requiredInnerObjects.add(beansContainer.getSingletonBean(innerParamName));
+              }
+            }
+
+            Class<?>[] requiredInnerParamsArr = requiredInnerParams.toArray(new Class<?>[0]);
+            Object[] requiredInnerObjectsArr = requiredInnerObjects.toArray(new Object[0]);
+
+            try {
+
+              Object initInnerClass =
+                  currInnerClass
+                      .getDeclaredConstructor(requiredInnerParamsArr)
+                      .newInstance(requiredInnerObjectsArr);
+
+              String innerIdentifier = identifier + currInnerClass.toString();
+              beansContainer.registerSingletonBean(innerIdentifier, initInnerClass);
+              ReflectionUtils.runPostConstructMethods(
+                  currInnerClass, initInnerClass, threadPoolExecutor);
+              ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerIdentifier));
+              ReflectionUtils.runPostInitializationMethods(
+                  currInnerClass, initInnerClass, threadPoolExecutor);
+              ReflectionUtils.registerPersistentBeanLifecycles(
+                  currInnerClass, initInnerClass, beansContainer);
+
+            } catch (Exception ex) {
+              throw new Exception("Failed to init inner deps: " + ex.getMessage());
+            }
+
+            Class<?>[] requiredInnerParamsArr2 = requiredInnerParams.toArray(new Class<?>[0]);
+            Object[] requiredInnerObjectsArr2 = requiredInnerObjects.toArray(new Object[0]);
+
+            Object initParam =
+                paramType
+                    .getDeclaredConstructor(requiredInnerParamsArr2)
+                    .newInstance(requiredInnerObjectsArr2);
+
             ReflectionUtils.runPostConstructMethods(clazz, initParam, threadPoolExecutor);
             beansContainer.registerSingletonBean(paramName, initParam);
             ReflectionUtils.initializeFields(beansContainer.getSingletonBean(paramName));
             requiredParams.add(paramType);
             requiredObjects.add(beansContainer.getSingletonBean(paramName));
+
           } catch (InstantiationException | IllegalAccessException ex) {
             throw new OblivionException(
                 String.format(
