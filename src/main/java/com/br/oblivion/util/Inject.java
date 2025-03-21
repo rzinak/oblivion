@@ -34,8 +34,10 @@ public class Inject {
           Annotation annotation = f.getAnnotation(OblivionWire.class);
           Method constructorToInjectMethod = OblivionWire.class.getMethod("constructorToInject");
           String constructorIdentifier = (String) constructorToInjectMethod.invoke(annotation);
+
           prototypeBean.registerPrototypeBean(
               f.getName(), f.getType(), beansContainer, constructorIdentifier);
+
           beanObject =
               beansContainer.getPrototypeBean(f.getName(), beansContainer, threadPoolExecutor);
         }

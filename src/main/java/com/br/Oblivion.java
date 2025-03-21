@@ -3,22 +3,29 @@ package com.br;
 import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.util.OblivionSetup;
 import com.br.samples.service.TaskService;
-import com.br.samples.service.UserService;
+import com.br.samples.testAppTaskManager.cli.*;
 
 public class Oblivion {
 
-  @OblivionWire UserService userService;
-  @OblivionWire TaskService taskService;
+  @OblivionWire static TaskCLI taskCLI;
+
+  @OblivionWire static TaskService taskService;
 
   public static void main(String[] args) throws Exception {
     try {
       OblivionSetup.init();
+
+      taskCLI.run();
     } catch (InterruptedException ex) {
       ex.printStackTrace();
     }
   }
 
-  public void testing() {
+  public static void testing() {
+    // FIX: found a problem, if i set oblivionfield to inject a field, in this case was
+    // a map, but if i already had it initialized, it kinda skips all call to the lifecycle
+    // methods
+
     // System.out.println("TASK SERVICE: " + taskService);
     // taskService.setTaskName("Code PROTO 1");
     // taskService.setIsAvailable(false);

@@ -60,7 +60,6 @@ public class BeansContainer {
       Object[] requiredObjects = prototypeBeans.get(identifier).getRequiredObjects();
 
       if (prototypeBeanClass != null) {
-
         Constructor<?>[] ctors = prototypeBeanClass.getDeclaredConstructors();
 
         for (Constructor<?> ctor : ctors) {

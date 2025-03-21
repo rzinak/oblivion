@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: refactor this code
 public class PrototypeBean {
-  // TODO: it needs improvement like when we have nested annotations, but i can do that later
   public <T> void registerPrototypeBean(
       String identifier,
       Class<T> clazz,
@@ -79,20 +79,61 @@ public class PrototypeBean {
         // required objects to use inside newInstance
         List<Object> requiredObjects = new ArrayList<>();
 
+        // required inner dependencies
+        List<Class<?>> requiredInnerParams = new ArrayList<>();
+        List<Object> requiredInnerObjects = new ArrayList<>();
+
+        Class<?> currInnerClass = null;
+
+        // TODO: refactor this
         for (Parameter p : params) {
           try {
             Class<?> paramType = p.getType();
             String paramName = p.getType().getName();
-            Object initParam = paramType.newInstance();
-            // even though in this method we are registering prototype beans,
-            // a dependency of a prototype bean is still a singleton
+
+            currInnerClass = paramType;
+
+            Constructor<?>[] innerCtors = paramType.getDeclaredConstructors();
+
+            for (Constructor<?> c : innerCtors) {
+              Parameter[] innerParams = c.getParameters();
+
+              for (Parameter innerP : innerParams) {
+                Class<?> innerParamType = innerP.getType();
+                Object initInnerParam = innerParamType.newInstance();
+                String innerIdentifier = identifier + currInnerClass.toString();
+                beansContainer.registerSingletonBean(innerIdentifier, initInnerParam);
+                ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerIdentifier));
+                requiredInnerParams.add(innerParamType);
+                requiredInnerObjects.add(initInnerParam);
+              }
+            }
+
+            Class<?>[] requiredInnerParamsArr = requiredInnerParams.toArray(new Class<?>[0]);
+            Object[] requiredInnerObjectsArr = requiredInnerObjects.toArray(new Object[0]);
+
+            Object initParam = null;
+
+            try {
+              initParam =
+                  paramType
+                      .getDeclaredConstructor(requiredInnerParamsArr)
+                      .newInstance(requiredInnerObjectsArr);
+            } catch (Exception ex) {
+              throw new Exception(
+                  String.format(
+                      "Failed to initialize class '%s' -> '%s'", paramType, ex.getMessage()));
+            }
+
             String customDependencyName =
                 LocalDateTime.now() + identifier + paramName + clazz.getName();
             beansContainer.registerSingletonBean(customDependencyName, initParam);
             ReflectionUtils.initializeFields(beansContainer.getSingletonBean(customDependencyName));
+
             requiredParams.add(paramType);
             requiredObjects.add(beansContainer.getSingletonBean(customDependencyName));
             prototypeBeanMetadata.setPrototypeClass(clazz);
+
           } catch (InstantiationException | IllegalAccessException ex) {
             throw new OblivionException(
                 String.format(
