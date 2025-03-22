@@ -110,7 +110,6 @@ public class SingletonBean {
             Object[] requiredInnerObjectsArr = requiredInnerObjects.toArray(new Object[0]);
 
             try {
-
               Object initInnerClass =
                   currInnerClass
                       .getDeclaredConstructor(requiredInnerParamsArr)
@@ -138,7 +137,6 @@ public class SingletonBean {
                     .getDeclaredConstructor(requiredInnerParamsArr2)
                     .newInstance(requiredInnerObjectsArr2);
 
-            ReflectionUtils.runPostConstructMethods(clazz, initParam, threadPoolExecutor);
             beansContainer.registerSingletonBean(paramName, initParam);
             ReflectionUtils.initializeFields(beansContainer.getSingletonBean(paramName));
             requiredParams.add(paramType);
