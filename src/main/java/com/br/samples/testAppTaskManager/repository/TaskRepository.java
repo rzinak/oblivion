@@ -9,6 +9,11 @@ public class TaskRepository {
 
   @OblivionField private List<Task> tasks;
 
+  @OblivionPostConstruct
+  public void r1() {
+    System.out.println("CLI | repository 1");
+  }
+
   public void addTask(Task task) {
     tasks.add(task);
   }

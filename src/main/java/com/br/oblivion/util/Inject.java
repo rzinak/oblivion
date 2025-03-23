@@ -9,6 +9,7 @@ import com.br.oblivion.container.BeansContainer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Inject {
@@ -47,6 +48,22 @@ public class Inject {
           f.set(appInstance, beanObject);
         }
       }
+    }
+
+    for (Map.Entry<String, Class<?>> entry : BeansContainer.getConfigBeans().entrySet()) {
+      String beanName = entry.getKey();
+      Class<?> beanClass = entry.getValue();
+
+      String beanType = getBeanType(beanClass, singletonBean, beansContainer);
+      Object beanObject = null;
+
+      if ("singleton".equals(beanType)) {
+        singletonBean.initializeSingletonBean(
+            beanName, beanClass, beansContainer, threadPoolExecutor);
+        beanObject = beansContainer.getSingletonBean(beanName);
+      }
+
+      if (beanObject != null) {}
     }
   }
 

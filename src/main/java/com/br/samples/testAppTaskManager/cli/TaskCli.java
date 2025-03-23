@@ -1,21 +1,36 @@
 package com.br.samples.testAppTaskManager.cli;
 
 import com.br.oblivion.annotations.OblivionConstructorInject;
-import com.br.oblivion.annotations.OblivionPrototype;
+import com.br.oblivion.annotations.OblivionPostConstruct;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.testAppTaskManager.service.TaskService;
 import java.util.Scanner;
 
 @OblivionService
-@OblivionPrototype
-public class TaskCLI {
+public class TaskCli {
   private TaskService taskService;
 
   @OblivionConstructorInject
-  public TaskCLI(TaskService taskService) {
+  public TaskCli(TaskService taskService) {
     this.taskService = taskService;
   }
 
+  @OblivionPostConstruct(order = 0)
+  public static void cli1() {
+    System.out.println("CLI 1");
+  }
+
+  @OblivionPostConstruct(order = 1)
+  public static void cli2() {
+    System.out.println("CLI 2");
+  }
+
+  @OblivionPostConstruct(order = 3)
+  public static void cli3() {
+    System.out.println("CLI 3");
+  }
+
+  @OblivionPostConstruct
   public void run() {
     Scanner scanner = new Scanner(System.in);
 

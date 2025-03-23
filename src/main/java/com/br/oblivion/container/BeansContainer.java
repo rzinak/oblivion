@@ -6,6 +6,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +20,9 @@ public class BeansContainer {
   private List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
   private List<Pair<Object, Method>> preShutdownMethods = new ArrayList<>();
   private List<Pair<Object, Method>> postShutdownMethods = new ArrayList<>();
+
+  // classes loaded from oblivion.config
+  public static Map<String, Class<?>> configBeans = new HashMap<>();
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
@@ -99,6 +103,15 @@ public class BeansContainer {
         | InvocationTargetException ex) {
       throw new OblivionException("Error creating prototype bean: " + identifier, ex);
     }
+  }
+
+  // beans loaded from oblivion.config file
+  public static void registerConfigBean(String identifier, Class<?> clazz) {
+    configBeans.put(identifier, clazz);
+  }
+
+  public static Map<String, Class<?>> getConfigBeans() {
+    return configBeans;
   }
 
   public void registerPreDestroyMethods(Object instantiatedClass, Method method) {
