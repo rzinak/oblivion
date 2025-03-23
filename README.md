@@ -53,13 +53,61 @@ Here's an example of how you can setup and initialize Oblivion in a simple appli
 ```java
 public class Main {
 
+  // Injects the TaskService class. This is one way we can inject a bean, the other one
+  // is by using the 'oblivion.config' file. If using the config file, there's no need
+  // to add the code below
   @OblivionWire
-  private static TaskService taskService; // Injects the TaskService class
+  private static TaskCli taskCli; 
 
   public static void main(String[] args) throws Exception {
-    Main app = new Main();
-    OblivionSetup.init(app);  // Initializes the DI container and injects dependencies
+    try {
+      OblivionSetup.preLoadConfigFile(); // Load beans to wire from the 'oblivion.config' file 
+      OblivionSetup.init(); // Initializes the DI container and injects dependencies
 
+
+      // The method below is used in case we use @OblivionWire to wire the TaskCli class
+      // directly in the main file, but if we are using the 'oblivion.config' file, there
+      // won't be any reference to 'taskCli', for example. So we can a bean lifecycle annotation
+      // like @OblivionPostConstruct for example, that can run the 'run' method automatically.
+      taskCli.run();
+    } catch (InterruptedException ex) {
+      ex.printStackTrace();
+    }
+  }
+}
+```
+
+- `@OblivionWire` is used to inject the TaskService class.
+
+*@OblivionWire* takes an optional `constructorToInject = STRING`, with the desired constructor to be injected:
+
+```java
+@OblivionWire(constructorToInject = "CONSTRUCTOR IDENTIFIER")
+TaskService taskService;
+
+```
+
+The name of the constructor is defined inside it's class, with an annotation `@OblivionConstructorInject(name = STRING)` above the constructor. So the name you give it there, is the same you pass to *@OblivionWire*.
+
+- `OblivionSetup.init(app)` initializes the DI container and wires up the necessary dependencies.
+
+3. **TaskCli Class**
+
+```java
+@OblivionService // Necessary annotation to show Oblivion that we'll be working with this class
+@OblivionPrototype // If this class is supposed to be a prototype bean, we use this. Otherwise we remove this annotation
+public class TaskCli {
+  private TaskService taskService;
+
+  @OblivionConstructorInject // Optional annotation. Marks a constructor to be injected, otherwise, the first is injected
+  public TaskCli(TaskService taskService) {
+    this.taskService = taskService;
+  }
+
+  // This makes this method execute after all dependencies have been injected. Like I said in the main file snippet,
+  // it can be used when wiring a bean from the oblivion.config file, if that's not the case, we can call run() normmally
+  @OblivionPostConstruct 
+  public void run() {
     Scanner scanner = new Scanner(System.in);
 
     while (true) {
@@ -91,23 +139,7 @@ public class Main {
 }
 ```
 
-- `@OblivionWire` is used to inject the TaskService class.
-
-*@OblivionWire* takes an optional `constructorToInject = STRING`, with the desired constructor to be injected:
-
-```java
-@OblivionWire(constructorToInject = "CONSTRUCTOR IDENTIFIER")
-TaskService taskService;
-
-```
-
-The name of the constructor is defined inside it's class, with an annotation `@OblivionConstructorInject(name = STRING)` above the constructor. So the name you give it there, is the same you pass to *@OblivionWire*.
-
-- `OblivionSetup.init(app)` initializes the DI container and wires up the necessary dependencies.
-
-3. **Service Layer**
-
-The service class uses constructor-based injection to manage dependencies:
+4. **Service Class**
 
 ```java
 @OblivionService
@@ -129,6 +161,24 @@ public class TaskService {
 ```
 
 - `TaskService` requires `TaskRepository` to be injected via its constructor.
+
+5. **Repository Class**
+
+```java
+@OblivionService
+public class TaskRepository {
+
+  @OblivionField private List<Task> tasks; // Initialize this field
+
+  public void addTask(Task task) {
+    tasks.add(task);
+  }
+
+  public List<Task> getAllTasks() {
+    return tasks;
+  }
+}
+```
 
 ---
 
@@ -181,6 +231,17 @@ Configurations are made in the `oblivion.properties` file like this: `KEY=VALUE`
 ```java
 @OblivionPostConstruct(cond = "ENV.PROD")
 ```
+
+**Wire Beans From External File**
+
+We can also wire a bean using the `oblivion.config` file.
+
+Very limited for now. Later I will add support for more annotations in the config file and also change the file type so we can use annotation when wiring
+beans using it.
+
+The `oblivion.config` expects the following structure: `Annotation:Class`.
+
+So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.TaskCli`
 
 ---
 

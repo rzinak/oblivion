@@ -5,6 +5,7 @@ import com.br.oblivion.bean.SingletonBean;
 import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.exception.OblivionException;
 import com.br.oblivion.lifecycle.Shutdown;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,6 +33,7 @@ public class OblivionSetup {
       SingletonBean singletonBean = new SingletonBean();
       PrototypeBean prototypeBean = new PrototypeBean();
       Inject.inject(appInstance, singletonBean, prototypeBean, beansContainer, threadPoolExecutor);
+
     } catch (Exception ex) {
       throw new Exception("Failed to initialize oblivion -> " + ex.getMessage());
     }
@@ -54,6 +56,40 @@ public class OblivionSetup {
       }
     } catch (OblivionException ex) {
       throw new OblivionException("Error loading thread pool config: " + ex.getMessage());
+    }
+  }
+
+  public static void preLoadConfigFile() throws Exception, OblivionException {
+    Properties oblivionConfigProperties;
+
+    try {
+      oblivionConfigProperties = OblivionConfig.loadProperties();
+      Class<?> currClass = null;
+      String currIdentifier = null;
+
+      try {
+        for (Entry<Object, Object> entry : oblivionConfigProperties.entrySet()) {
+          String currKey = entry.getKey().toString();
+
+          if (currKey.equals("OblivionWire")) {
+            try {
+              String currVal = oblivionConfigProperties.getProperty(currKey);
+              currClass = Class.forName(currVal);
+              currIdentifier = currClass.getSimpleName();
+              char c[] = currIdentifier.toCharArray();
+              c[0] = Character.toLowerCase(c[0]);
+              currIdentifier = new String(c);
+              BeansContainer.registerConfigBean(currIdentifier, currClass);
+            } catch (Exception ex) {
+              throw new Exception("Error instantiating class from config file: " + ex.getMessage());
+            }
+          }
+        }
+      } catch (Exception ex) {
+        throw new Exception("Failed to read config file: " + ex.getMessage());
+      }
+    } catch (OblivionException ex) {
+      throw new OblivionException("Error loading oblivion config file: " + ex.getMessage());
     }
   }
 }
