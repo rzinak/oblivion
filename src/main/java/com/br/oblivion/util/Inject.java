@@ -21,6 +21,8 @@ public class Inject {
       ThreadPoolExecutor threadPoolExecutor)
       throws Exception {
 
+    // NOTE: fields here are the fields declared inside the code, beans referenced
+    // in the oblivion.config file wont appear here
     Field[] fields = appInstance.getClass().getDeclaredFields();
 
     for (Field f : fields) {
@@ -50,20 +52,23 @@ public class Inject {
       }
     }
 
+    // NOTE: this is to inject beans referenced in the oblivion.config file, as they by
+    // concept are not native fields in the main function
     for (Map.Entry<String, Class<?>> entry : BeansContainer.getConfigBeans().entrySet()) {
       String beanName = entry.getKey();
       Class<?> beanClass = entry.getValue();
-
       String beanType = getBeanType(beanClass, singletonBean, beansContainer);
-      Object beanObject = null;
 
       if ("singleton".equals(beanType)) {
         singletonBean.initializeSingletonBean(
             beanName, beanClass, beansContainer, threadPoolExecutor);
-        beanObject = beansContainer.getSingletonBean(beanName);
+        beansContainer.getSingletonBean(beanName);
+      } else if ("prototype".equals(beanType)) {
+        // NOTE: since im using a simple file, theres no way to use annotations, and other stuff
+        // so later i intend to change to another file format to support all of these features.
+        prototypeBean.registerPrototypeBean(beanName, beanClass, beansContainer, null);
+        beansContainer.getPrototypeBean(beanName, beansContainer, threadPoolExecutor);
       }
-
-      if (beanObject != null) {}
     }
   }
 
