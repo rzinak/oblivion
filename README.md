@@ -4,13 +4,14 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 ### Features
 
-- **Constructor Injection** *(Dependencies are injected through the constructor)*
-- **Field Injection** *(For certain types, class dependencies should be injected via constructor)*
-- **Lifecycle Callbacks** *(Manage the lifecycle of your beans through customized phases)*
-- **Custom Annotations** *(For more control over the DI setup)*
-- **Singleton Beans** *(Default bean type)*
-- **Prototype Beans** *(Create a new instance each time)*
-- **Unique Bean Naming** *(Name your beans to avoid confusion in large projects)*
+- **Constructor Injection**
+- **Field Injection**
+- **Lifecycle Callbacks**
+- **Custom Annotations**
+- **Singleton Beans**
+- **Prototype Beans**
+- **Unique Bean Naming**
+- **Wire Beans Using a Config File**
 
 ---
 
@@ -40,7 +41,7 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 ### Quick Start
 
-*Note that this is now 100% the way I expect Oblivion to be used in the future, it's still in a very early development stage and implementation in external apps is very limited.*
+*Note that this is not 100% the way I expect Oblivion to be used in the future, it's still in a very early development stage and implementation in external apps is very limited.*
 
 1. **Add Dependencies**
 
@@ -248,6 +249,7 @@ So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.
 ### Future work
 
 - **Handle Circular Dependencies** (more scalable DI management).
+- **Improve Error Handling**
 - **Improve Resource Cleanup** (like closing DB connections).
 - **Custom Lifecycle Phases** (let users define custom lifecycle annotations).
 - **Improve app's entry point detection** (config files, manifest files... but for now it's alright).
