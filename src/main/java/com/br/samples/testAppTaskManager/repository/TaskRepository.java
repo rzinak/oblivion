@@ -2,12 +2,13 @@ package com.br.samples.testAppTaskManager.repository;
 
 import com.br.oblivion.annotations.*;
 import com.br.samples.testAppTaskManager.model.Task;
+import java.util.ArrayList;
 import java.util.List;
 
 @OblivionService
 public class TaskRepository {
 
-  @OblivionField private List<Task> tasks;
+  private List<Task> tasks = new ArrayList<>();
 
   @OblivionPostConstruct
   public void r1() {

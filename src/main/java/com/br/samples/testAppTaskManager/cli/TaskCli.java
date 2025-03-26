@@ -1,18 +1,14 @@
 package com.br.samples.testAppTaskManager.cli;
 
-import com.br.oblivion.annotations.OblivionConstructorInject;
 import com.br.oblivion.annotations.OblivionPostConstruct;
-import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.testAppTaskManager.service.TaskService;
 import java.util.Scanner;
 
 @OblivionService
-@OblivionPrototype
 public class TaskCli {
   private TaskService taskService;
 
-  @OblivionConstructorInject
   public TaskCli(TaskService taskService) {
     this.taskService = taskService;
   }

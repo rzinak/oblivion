@@ -30,9 +30,10 @@ public class Inject {
         String beanType = getBeanType(f.getType(), singletonBean, beansContainer);
         Object beanObject = null;
         if ("singleton".equals(beanType)) {
-          singletonBean.initializeSingletonBean(
-              f.getName(), f.getType(), beansContainer, threadPoolExecutor);
-          beanObject = beansContainer.getSingletonBean(f.getName());
+          beanObject = singletonBean.injectConstructor(f.getType(), f.getName(), beansContainer);
+          // singletonBean.initializeSingletonBean(
+          //     f.getName(), f.getType(), beansContainer, threadPoolExecutor);
+          // beanObject = beansContainer.getSingletonBean(f.getName());
         } else if ("prototype".equals(beanType)) {
           Annotation annotation = f.getAnnotation(OblivionWire.class);
           Method constructorToInjectMethod = OblivionWire.class.getMethod("constructorToInject");
@@ -60,8 +61,9 @@ public class Inject {
       String beanType = getBeanType(beanClass, singletonBean, beansContainer);
 
       if ("singleton".equals(beanType)) {
-        singletonBean.initializeSingletonBean(
-            beanName, beanClass, beansContainer, threadPoolExecutor);
+        singletonBean.injectConstructor(beanClass, beanName, beansContainer);
+        // singletonBean.initializeSingletonBean(
+        //     beanName, beanClass, beansContainer, threadPoolExecutor);
         beansContainer.getSingletonBean(beanName);
       } else if ("prototype".equals(beanType)) {
         // NOTE: since im using a simple file, theres no way to use annotations, and other stuff
