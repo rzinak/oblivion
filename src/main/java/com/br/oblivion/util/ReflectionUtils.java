@@ -1,6 +1,5 @@
 package com.br.oblivion.util;
 
-import com.br.oblivion.annotations.OblivionField;
 import com.br.oblivion.annotations.OblivionPostConstruct;
 import com.br.oblivion.annotations.OblivionPostInitialization;
 import com.br.oblivion.annotations.OblivionPostShutdown;
@@ -11,16 +10,13 @@ import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.container.Pair;
 import com.br.oblivion.exception.OblivionException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -29,99 +25,6 @@ public class ReflectionUtils {
   // TODO: also break this into different functions when adding more types
   // like initializePrimitives, initializeNonPrimitives... maybe use helper
   // function in case there are too many types
-  public static void initializeFields(Object instantiatedClass) throws Exception {
-    Class<?> clazz = instantiatedClass.getClass();
-    Class<?> booleanType = boolean.class;
-    Class<?> boxedBooleanType = Boolean.class;
-    Class<?> integerType = int.class;
-    Class<?> boxedIntegerType = Integer.class;
-    Class<?> stringType = String.class;
-    Class<?> listType = List.class;
-    Class<?> mapType = Map.class;
-
-    for (Field field : clazz.getDeclaredFields()) {
-      if (field.isAnnotationPresent(OblivionField.class)) {
-        field.setAccessible(true);
-
-        if (field.getType().isAssignableFrom(booleanType)
-            || field.getType().isAssignableFrom(boxedBooleanType)) {
-          try {
-            field.set(instantiatedClass, true);
-          } catch (IllegalAccessException
-              | IllegalArgumentException
-              | NullPointerException
-              | ExceptionInInitializerError ex) {
-            throw new OblivionException(
-                String.format(
-                    "Error setting field '%s' in class '%s': %s",
-                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
-          }
-        }
-
-        if (field.getType().isAssignableFrom(integerType)
-            || field.getType().isAssignableFrom(boxedIntegerType)) {
-          try {
-            field.set(instantiatedClass, 0);
-          } catch (IllegalAccessException
-              | IllegalArgumentException
-              | NullPointerException
-              | ExceptionInInitializerError ex) {
-            throw new OblivionException(
-                String.format(
-                    "Error setting field '%s' in class '%s': %s",
-                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
-          }
-        }
-
-        if (field.getType().isAssignableFrom(stringType)) {
-          try {
-            field.set(instantiatedClass, "");
-          } catch (IllegalAccessException
-              | IllegalArgumentException
-              | NullPointerException
-              | ExceptionInInitializerError ex) {
-            throw new OblivionException(
-                String.format(
-                    "Error setting field '%s' in class '%s': %s",
-                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
-          }
-        }
-
-        // NOTE: here i instantiate an ArrayList by default, later i can make this
-        // more dynamic, to allow different implementations
-        if (field.getType().isAssignableFrom(listType)) {
-          try {
-            field.set(instantiatedClass, new ArrayList<>());
-          } catch (IllegalAccessException
-              | IllegalArgumentException
-              | NullPointerException
-              | ExceptionInInitializerError ex) {
-            throw new OblivionException(
-                String.format(
-                    "Error setting field '%s' in class '%s': %s",
-                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
-          }
-        }
-
-        // NOTE: here i instantiate a HashMap by default, later i can make this
-        // more dynamic, to allow different implementations
-        if (field.getType().isAssignableFrom(mapType)) {
-          try {
-            field.set(instantiatedClass, new HashMap<>());
-          } catch (IllegalAccessException
-              | IllegalArgumentException
-              | NullPointerException
-              | ExceptionInInitializerError ex) {
-            throw new OblivionException(
-                String.format(
-                    "Error setting field '%s' in class '%s': %s",
-                    field.getName(), clazz.getSimpleName(), ex.getMessage()));
-          }
-        }
-      }
-    }
-  }
-
   // NOTE: registers @OblivionPreDestroy, @OblivionPreShutdown, @OblivionPostShutdown
   public static void registerPersistentBeanLifecycles(
       Class<?> clazz, Object objectToRun, BeansContainer container) throws OblivionException {

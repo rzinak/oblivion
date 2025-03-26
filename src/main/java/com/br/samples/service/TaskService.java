@@ -1,6 +1,5 @@
 package com.br.samples.service;
 
-import com.br.oblivion.annotations.OblivionField;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.model.User;
 import java.util.List;
@@ -10,21 +9,21 @@ import java.util.Map;
 public class TaskService {
   private final UserService userService;
 
-  @OblivionField private String taskName;
+  private String taskName;
 
-  @OblivionField private String stringText;
+  private String stringText;
 
-  @OblivionField private boolean isAvailable;
+  private boolean isAvailable;
 
-  @OblivionField private Boolean isRegistered;
+  private Boolean isRegistered;
 
-  @OblivionField private int normalInt;
+  private int normalInt;
 
-  @OblivionField private Integer boxedInt;
+  private Integer boxedInt;
 
-  @OblivionField private List<String> listString;
+  private List<String> listString;
 
-  @OblivionField private Map<String, String> mapStringString;
+  private Map<String, String> mapStringString;
 
   public TaskService(UserService userService) {
     this.userService = userService;

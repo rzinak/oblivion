@@ -44,7 +44,6 @@ public class SingletonBean {
 
       // Initial field injection and post-init might still happen here,
       // OR preferably inside resolveDependency after instantiation and registration.
-      // ReflectionUtils.initializeFields(instance);
       // ReflectionUtils.runPostInitializationMethods(clazz, instance, threadPoolExecutor);
       // ReflectionUtils.registerPersistentBeanLifecycles(clazz, instance, beansContainer);
 
@@ -55,7 +54,6 @@ public class SingletonBean {
       //   T init = clazz.newInstance();
       //   ReflectionUtils.runPostConstructMethods(clazz, init, threadPoolExecutor);
       //   beansContainer.registerSingletonBean(identifier, init);
-      //   ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
       //   ReflectionUtils.runPostInitializationMethods(clazz, init, threadPoolExecutor);
       //   ReflectionUtils.registerPersistentBeanLifecycles(clazz, init, beansContainer);
       //
@@ -107,7 +105,6 @@ public class SingletonBean {
       //                 innerParamType, initInnerParam, threadPoolExecutor);
       //             beansContainer.registerSingletonBean(innerParamName, initInnerParam);
       //
-      // ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerParamName));
       //             requiredInnerParams.add(innerParamType);
       //             requiredInnerObjects.add(beansContainer.getSingletonBean(innerParamName));
       //           } else {
@@ -131,7 +128,6 @@ public class SingletonBean {
       //         beansContainer.registerSingletonBean(innerIdentifier, initInnerClass);
       //         ReflectionUtils.runPostConstructMethods(
       //             currInnerClass, initInnerClass, threadPoolExecutor);
-      //         ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerIdentifier));
       //         ReflectionUtils.runPostInitializationMethods(
       //             currInnerClass, initInnerClass, threadPoolExecutor);
       //         ReflectionUtils.registerPersistentBeanLifecycles(
@@ -150,7 +146,6 @@ public class SingletonBean {
       //               .newInstance(requiredInnerObjectsArr2);
       //
       //       beansContainer.registerSingletonBean(paramName, initParam);
-      //       ReflectionUtils.initializeFields(beansContainer.getSingletonBean(paramName));
       //       requiredParams.add(paramType);
       //       requiredObjects.add(beansContainer.getSingletonBean(paramName));
       //
@@ -170,7 +165,6 @@ public class SingletonBean {
       //         clazz.getDeclaredConstructor(requiredParamsArr).newInstance(requiredObjectsArr);
       //     beansContainer.registerSingletonBean(identifier, initClass);
       //     ReflectionUtils.runPostConstructMethods(clazz, initClass, threadPoolExecutor);
-      //     ReflectionUtils.initializeFields(beansContainer.getSingletonBean(identifier));
       //     ReflectionUtils.runPostInitializationMethods(clazz, initClass, threadPoolExecutor);
       //     ReflectionUtils.registerPersistentBeanLifecycles(clazz, initClass, beansContainer);
       //   } catch (NoSuchMethodException

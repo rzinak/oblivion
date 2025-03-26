@@ -169,7 +169,7 @@ public class TaskService {
 @OblivionService
 public class TaskRepository {
 
-  @OblivionField private List<Task> tasks; // Initialize this field
+  private List<Task> tasks = new ArrayList<>(); 
 
   public void addTask(Task task) {
     tasks.add(task);

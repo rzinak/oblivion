@@ -103,7 +103,6 @@ public class PrototypeBean {
                 Object initInnerParam = innerParamType.newInstance();
                 String innerIdentifier = identifier + currInnerClass.toString();
                 beansContainer.registerSingletonBean(innerIdentifier, initInnerParam);
-                ReflectionUtils.initializeFields(beansContainer.getSingletonBean(innerIdentifier));
                 requiredInnerParams.add(innerParamType);
                 requiredInnerObjects.add(initInnerParam);
               }
@@ -128,7 +127,6 @@ public class PrototypeBean {
             String customDependencyName =
                 LocalDateTime.now() + identifier + paramName + clazz.getName();
             beansContainer.registerSingletonBean(customDependencyName, initParam);
-            ReflectionUtils.initializeFields(beansContainer.getSingletonBean(customDependencyName));
 
             requiredParams.add(paramType);
             requiredObjects.add(beansContainer.getSingletonBean(customDependencyName));

@@ -78,7 +78,6 @@ public class BeansContainer {
             Object initPrototypeBean = prototypeBeanClass.newInstance();
             ReflectionUtils.runPostConstructMethods(
                 prototypeBeanClass, initPrototypeBean, threadPoolExecutor);
-            ReflectionUtils.initializeFields(initPrototypeBean);
             ReflectionUtils.runPostInitializationMethods(
                 prototypeBeanClass, initPrototypeBean, threadPoolExecutor);
 
@@ -92,7 +91,6 @@ public class BeansContainer {
                     .newInstance(requiredObjects);
             ReflectionUtils.runPostConstructMethods(
                 prototypeBeanClass, initPrototypeBean, threadPoolExecutor);
-            ReflectionUtils.initializeFields(initPrototypeBean);
             ReflectionUtils.runPostInitializationMethods(
                 prototypeBeanClass, initPrototypeBean, threadPoolExecutor);
             ReflectionUtils.registerPersistentBeanLifecycles(

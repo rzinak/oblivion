@@ -1,6 +1,5 @@
 package com.br.samples.service;
 
-import com.br.oblivion.annotations.OblivionField;
 import com.br.oblivion.annotations.OblivionPostConstruct;
 import com.br.oblivion.annotations.OblivionPostInitialization;
 import com.br.oblivion.annotations.OblivionPostShutdown;
@@ -13,7 +12,7 @@ import java.util.List;
 
 @OblivionService
 public class UserService {
-  @OblivionField private List<User> users;
+  private List<User> users;
 
   public UserService() {}
 
