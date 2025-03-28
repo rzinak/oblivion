@@ -6,9 +6,7 @@ import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.bean.PrototypeBean;
 import com.br.oblivion.bean.SingletonBean;
 import com.br.oblivion.container.BeansContainer;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -31,21 +29,9 @@ public class Inject {
         Object beanObject = null;
         if ("singleton".equals(beanType)) {
           beanObject = singletonBean.injectConstructor(f.getType(), f.getName(), beansContainer);
-          // singletonBean.initializeSingletonBean(
-          //     f.getName(), f.getType(), beansContainer, threadPoolExecutor);
-          // beanObject = beansContainer.getSingletonBean(f.getName());
         } else if ("prototype".equals(beanType)) {
-          Annotation annotation = f.getAnnotation(OblivionWire.class);
-          Method constructorToInjectMethod = OblivionWire.class.getMethod("constructorToInject");
-          String constructorIdentifier = (String) constructorToInjectMethod.invoke(annotation);
-
-          prototypeBean.registerPrototypeBean(
-              f.getName(), f.getType(), beansContainer, constructorIdentifier);
-
-          beanObject =
-              beansContainer.getPrototypeBean(f.getName(), beansContainer, threadPoolExecutor);
+          beanObject = prototypeBean.injectConstructor(f.getType(), f.getName(), beansContainer);
         }
-
         if (beanObject != null) {
           f.setAccessible(true);
           f.set(appInstance, beanObject);
@@ -62,14 +48,11 @@ public class Inject {
 
       if ("singleton".equals(beanType)) {
         singletonBean.injectConstructor(beanClass, beanName, beansContainer);
-        // singletonBean.initializeSingletonBean(
-        //     beanName, beanClass, beansContainer, threadPoolExecutor);
         beansContainer.getSingletonBean(beanName);
       } else if ("prototype".equals(beanType)) {
         // NOTE: since im using a simple file, theres no way to use annotations, and other stuff
         // so later i intend to change to another file format to support all of these features.
-        prototypeBean.registerPrototypeBean(beanName, beanClass, beansContainer, null);
-        beansContainer.getPrototypeBean(beanName, beansContainer, threadPoolExecutor);
+        prototypeBean.injectConstructor(beanClass, beanName, beansContainer);
       }
     }
   }

@@ -65,7 +65,6 @@ public class Main {
       OblivionSetup.preLoadConfigFile(); // Load beans to wire from the 'oblivion.config' file 
       OblivionSetup.init(); // Initializes the DI container and injects dependencies
 
-
       // The method below is used in case we use @OblivionWire to wire the TaskCli class
       // directly in the main file, but if we are using the 'oblivion.config' file, there
       // won't be any reference to 'taskCli', for example. So we can a bean lifecycle annotation
