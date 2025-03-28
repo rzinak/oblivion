@@ -1,11 +1,18 @@
 package com.br.samples.testAppTaskManager.cli;
 
 import com.br.oblivion.annotations.OblivionPostConstruct;
+import com.br.oblivion.annotations.OblivionPostInitialization;
+import com.br.oblivion.annotations.OblivionPostShutdown;
+import com.br.oblivion.annotations.OblivionPreDestroy;
+import com.br.oblivion.annotations.OblivionPreInitialization;
+import com.br.oblivion.annotations.OblivionPreShutdown;
+import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.testAppTaskManager.service.TaskService;
 import java.util.Scanner;
 
 @OblivionService
+@OblivionPrototype
 public class TaskCli {
   private TaskService taskService;
 
@@ -13,22 +20,36 @@ public class TaskCli {
     this.taskService = taskService;
   }
 
-  @OblivionPostConstruct(order = 0)
-  public static void cli1() {
-    System.out.println("CLI 1");
-  }
-
-  @OblivionPostConstruct(order = 1)
-  public static void cli2() {
-    System.out.println("CLI 2");
-  }
-
-  @OblivionPostConstruct(order = 3)
-  public static void cli3() {
-    System.out.println("CLI 3");
+  @OblivionPreInitialization
+  public static void preInit() {
+    System.out.println("TASK CLI | PreInitialization");
   }
 
   @OblivionPostConstruct
+  public void postConstruct() {
+    System.out.println("TASK CLI | PostConstruct");
+  }
+
+  @OblivionPostInitialization
+  public void postInitialization() {
+    System.out.println("TASK CLI | PostInitialization");
+  }
+
+  @OblivionPreDestroy
+  public void preDestroy() {
+    System.out.println("TASK CLI | PreDestroy");
+  }
+
+  @OblivionPreShutdown
+  public void preShutdown() {
+    System.out.println("TASK CLI | PreShutdown");
+  }
+
+  @OblivionPostShutdown
+  public void postShutdown() {
+    System.out.println("TASK CLI | PostShutdown");
+  }
+
   public void run() {
     Scanner scanner = new Scanner(System.in);
 

@@ -26,13 +26,13 @@ public class ReflectionUtils {
   // like initializePrimitives, initializeNonPrimitives... maybe use helper
   // function in case there are too many types
   // NOTE: registers @OblivionPreDestroy, @OblivionPreShutdown, @OblivionPostShutdown
-  public static void registerPersistentBeanLifecycles(
-      Class<?> clazz, Object objectToRun, BeansContainer container) throws OblivionException {
+  public static void registerPersistentBeanLifecycles(Class<?> clazz, Object objectToRun)
+      throws OblivionException {
     for (Method method : clazz.getDeclaredMethods()) {
       if (method.isAnnotationPresent(OblivionPreDestroy.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           try {
-            container.registerPreDestroyMethods(objectToRun, method);
+            BeansContainer.registerPreDestroyMethods(objectToRun, method);
           } catch (Exception ex) {
             throw new OblivionException(
                 String.format(
@@ -45,7 +45,7 @@ public class ReflectionUtils {
       if (method.isAnnotationPresent(OblivionPreShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           try {
-            container.registerPreShutdownMethods(objectToRun, method);
+            BeansContainer.registerPreShutdownMethods(objectToRun, method);
           } catch (Exception ex) {
             throw new OblivionException(
                 String.format(
@@ -58,7 +58,7 @@ public class ReflectionUtils {
       if (method.isAnnotationPresent(OblivionPostShutdown.class)) {
         if (method.getParameters().length == 0 && method.getReturnType().equals(Void.TYPE)) {
           try {
-            container.registerPostShutdownMethods(objectToRun, method);
+            BeansContainer.registerPostShutdownMethods(objectToRun, method);
           } catch (Exception ex) {
             throw new OblivionException(
                 String.format(

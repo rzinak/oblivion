@@ -10,11 +10,6 @@ public class TaskRepository {
 
   private List<Task> tasks = new ArrayList<>();
 
-  @OblivionPostConstruct
-  public void r1() {
-    System.out.println("CLI | repository 1");
-  }
-
   public void addTask(Task task) {
     tasks.add(task);
   }

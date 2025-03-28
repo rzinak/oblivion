@@ -4,6 +4,7 @@ import com.br.oblivion.annotations.OblivionConstructorInject;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.exception.OblivionException;
+import com.br.oblivion.util.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -14,15 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class BeansContainer {
   private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
   private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
 
   // lifecycle methods
-  private List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
-  private List<Pair<Object, Method>> preShutdownMethods = new ArrayList<>();
-  private List<Pair<Object, Method>> postShutdownMethods = new ArrayList<>();
+  private static List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
+  private static List<Pair<Object, Method>> preShutdownMethods = new ArrayList<>();
+  private static List<Pair<Object, Method>> postShutdownMethods = new ArrayList<>();
 
   // classes loaded from oblivion.config
   public static Map<String, Class<?>> configBeans = new HashMap<>();
@@ -55,7 +57,7 @@ public class BeansContainer {
     return configBeans;
   }
 
-  public void registerPreDestroyMethods(Object instantiatedClass, Method method) {
+  public static void registerPreDestroyMethods(Object instantiatedClass, Method method) {
     if (instantiatedClass == null || method == null) {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
@@ -64,7 +66,7 @@ public class BeansContainer {
     preDestroyMethods.add(preDestroyMethod);
   }
 
-  public void registerPreShutdownMethods(Object instantiatedClass, Method method) {
+  public static void registerPreShutdownMethods(Object instantiatedClass, Method method) {
     if (instantiatedClass == null || method == null) {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
@@ -73,7 +75,7 @@ public class BeansContainer {
     preShutdownMethods.add(preShutdownMethod);
   }
 
-  public void registerPostShutdownMethods(Object instantiatedClass, Method method) {
+  public static void registerPostShutdownMethods(Object instantiatedClass, Method method) {
     if (instantiatedClass == null || method == null) {
       throw new IllegalArgumentException("Instantiated class or method cannot be null");
     }
@@ -82,7 +84,8 @@ public class BeansContainer {
     postShutdownMethods.add(postShutdownMethod);
   }
 
-  public Object resolveDependency(Class<?> clazzToResolve, String classIdentifier)
+  public Object resolveDependency(
+      Class<?> clazzToResolve, String classIdentifier, ThreadPoolExecutor threadPoolExecutor)
       throws Exception {
     boolean isPrototypeBean = false;
     if (clazzToResolve.isAnnotationPresent(OblivionPrototype.class)) {
@@ -107,6 +110,8 @@ public class BeansContainer {
               clazzToResolve.getSimpleName()));
     }
 
+    ReflectionUtils.runPreInitializationMethods(clazzToResolve);
+
     Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
     Parameter[] parameters = constructorToUse.getParameters();
     Object newlyCreatedInstance;
@@ -118,7 +123,8 @@ public class BeansContainer {
 
       for (Parameter parameter : parameters) {
         Class<?> dependencyClass = parameter.getType();
-        Object dependencyInstance = resolveDependency(dependencyClass, classIdentifier);
+        Object dependencyInstance =
+            resolveDependency(dependencyClass, classIdentifier, threadPoolExecutor);
         resolvedArguments.add(dependencyInstance);
       }
 
@@ -129,8 +135,11 @@ public class BeansContainer {
       registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
     }
 
-    // i think i can handle lifecycle steps here
-    // like those runPostConstructMethods, initializeFields, etc...
+    ReflectionUtils.runPostConstructMethods(
+        clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+    ReflectionUtils.runPostInitializationMethods(
+        clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+    ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
 
     // also if i add that currentlyCreating set, here i think i should remove it
 
