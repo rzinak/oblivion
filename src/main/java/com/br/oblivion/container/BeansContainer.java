@@ -11,9 +11,11 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -84,6 +86,8 @@ public class BeansContainer {
     postShutdownMethods.add(postShutdownMethod);
   }
 
+  Set<Class<?>> currentlyCreatingBeans = new HashSet<Class<?>>();
+
   public Object resolveDependency(
       Class<?> clazzToResolve, String classIdentifier, ThreadPoolExecutor threadPoolExecutor)
       throws Exception {
@@ -100,9 +104,6 @@ public class BeansContainer {
       }
     }
 
-    // here i can handle circular deps
-    // i can add the classToResolve to a "currentlyCreating" set, if its already present throw error
-
     if (!clazzToResolve.isAnnotationPresent(OblivionService.class)) {
       throw new OblivionException(
           String.format(
@@ -110,40 +111,54 @@ public class BeansContainer {
               clazzToResolve.getSimpleName()));
     }
 
-    ReflectionUtils.runPreInitializationMethods(clazzToResolve);
+    if (currentlyCreatingBeans.contains(clazzToResolve)) {
+      throw new OblivionException(
+          String.format(
+              "Possible circular dependency found in class: '%s'. A circular dependency is"
+                  + " something like this: A -> B -> A. A class that depends on another class, that"
+                  + " depends on the previous class.\n"
+                  + " Make sure to double check your classes annotated with @OblivionService",
+              clazzToResolve.getSimpleName()));
+    }
 
-    Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
-    Parameter[] parameters = constructorToUse.getParameters();
-    Object newlyCreatedInstance;
+    currentlyCreatingBeans.add(clazzToResolve);
 
-    if (parameters.length == 0) {
-      newlyCreatedInstance = constructorToUse.newInstance();
-    } else {
-      List<Object> resolvedArguments = new ArrayList<>();
+    try {
+      ReflectionUtils.runPreInitializationMethods(clazzToResolve);
 
-      for (Parameter parameter : parameters) {
-        Class<?> dependencyClass = parameter.getType();
-        Object dependencyInstance =
-            resolveDependency(dependencyClass, classIdentifier, threadPoolExecutor);
-        resolvedArguments.add(dependencyInstance);
+      Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
+      Parameter[] parameters = constructorToUse.getParameters();
+      Object newlyCreatedInstance;
+
+      if (parameters.length == 0) {
+        newlyCreatedInstance = constructorToUse.newInstance();
+      } else {
+        List<Object> resolvedArguments = new ArrayList<>();
+
+        for (Parameter parameter : parameters) {
+          Class<?> dependencyClass = parameter.getType();
+          Object dependencyInstance =
+              resolveDependency(dependencyClass, classIdentifier, threadPoolExecutor);
+          resolvedArguments.add(dependencyInstance);
+        }
+
+        newlyCreatedInstance = constructorToUse.newInstance(resolvedArguments.toArray());
       }
 
-      newlyCreatedInstance = constructorToUse.newInstance(resolvedArguments.toArray());
+      if (isPrototypeBean == false) {
+        registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
+      }
+
+      ReflectionUtils.runPostConstructMethods(
+          clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+      ReflectionUtils.runPostInitializationMethods(
+          clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+      ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
+
+      return newlyCreatedInstance;
+    } finally {
+      currentlyCreatingBeans.remove(clazzToResolve);
     }
-
-    if (isPrototypeBean == false) {
-      registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
-    }
-
-    ReflectionUtils.runPostConstructMethods(
-        clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-    ReflectionUtils.runPostInitializationMethods(
-        clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-    ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
-
-    // also if i add that currentlyCreating set, here i think i should remove it
-
-    return newlyCreatedInstance;
   }
 
   private Constructor<?> findInjectableConstructor(Class<?> clazz) {

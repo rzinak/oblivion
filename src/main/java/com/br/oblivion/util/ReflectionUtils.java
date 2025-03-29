@@ -21,10 +21,6 @@ import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ReflectionUtils {
-  // TODO: ADD SUPPORT FOR MORE TYPES HERE
-  // TODO: also break this into different functions when adding more types
-  // like initializePrimitives, initializeNonPrimitives... maybe use helper
-  // function in case there are too many types
   // NOTE: registers @OblivionPreDestroy, @OblivionPreShutdown, @OblivionPostShutdown
   public static void registerPersistentBeanLifecycles(Class<?> clazz, Object objectToRun)
       throws OblivionException {
