@@ -16,19 +16,23 @@ public class OblivionSetup {
     try {
       Object appInstance = null;
       StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+      Package mPackage = null;
 
       for (StackTraceElement sTraceElement : stackTraceElements) {
         if (sTraceElement.getMethodName().equals("main")) {
           Class<?> mainClass = Class.forName(sTraceElement.getClassName());
+          mPackage = mainClass.getPackage();
           appInstance = mainClass.newInstance();
         }
       }
+
+      String rootPackage = (mPackage != null) ? mPackage.getName() : "";
 
       Shutdown shutdownHook = new Shutdown();
       BeansContainer beansContainer = new BeansContainer();
       ThreadPoolExecutor threadPoolExecutor = setupThreadPool();
       shutdownHook.attachShutdown(beansContainer, threadPoolExecutor);
-      Inject.inject(appInstance, beansContainer, threadPoolExecutor);
+      Inject.inject(appInstance, beansContainer, threadPoolExecutor, rootPackage);
 
     } catch (Exception ex) {
       throw new Exception("Failed to initialize oblivion -> " + ex.getMessage());

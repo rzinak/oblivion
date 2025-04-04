@@ -1,6 +1,7 @@
 package com.br.oblivion.container;
 
 import com.br.oblivion.annotations.OblivionConstructorInject;
+import com.br.oblivion.annotations.OblivionPrimary;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.exception.OblivionException;
@@ -89,8 +90,14 @@ public class BeansContainer {
   Set<Class<?>> currentlyCreatingBeans = new HashSet<Class<?>>();
 
   public Object resolveDependency(
-      Class<?> clazzToResolve, String classIdentifier, ThreadPoolExecutor threadPoolExecutor)
+      Class<?> clazzToResolve,
+      String classIdentifier,
+      ThreadPoolExecutor threadPoolExecutor,
+      Set<Class<?>> scannedClasses)
       throws Exception {
+
+    System.out.println("CURR CLASS RESOLVEDEPENDENCY: " + clazzToResolve.getSimpleName());
+
     boolean isPrototypeBean = false;
     if (clazzToResolve.isAnnotationPresent(OblivionPrototype.class)) {
       isPrototypeBean = true;
@@ -104,60 +111,104 @@ public class BeansContainer {
       }
     }
 
-    if (!clazzToResolve.isAnnotationPresent(OblivionService.class)) {
-      throw new OblivionException(
-          String.format(
-              "Cannot resolve class '%s'! Is this class annotated with '@OblivionService'?",
-              clazzToResolve.getSimpleName()));
-    }
+    if (clazzToResolve.isInterface()) {
+      System.out.println("is interface -> " + clazzToResolve.getSimpleName());
 
-    if (currentlyCreatingBeans.contains(clazzToResolve)) {
-      throw new OblivionException(
-          String.format(
-              "Possible circular dependency found in class: '%s'. A circular dependency is"
-                  + " something like this: A -> B -> A. A class that depends on another class, that"
-                  + " depends on the previous class.\n"
-                  + " Make sure to double check your classes annotated with @OblivionService",
-              clazzToResolve.getSimpleName()));
-    }
+      Class<?> primaryImplementation = null;
+      int primaryCount = 0;
 
-    currentlyCreatingBeans.add(clazzToResolve);
+      for (Class<?> clazz : scannedClasses) {
+        if (clazzToResolve.isAssignableFrom(clazz)) {
+          if (clazz.isAnnotationPresent(OblivionPrimary.class)) {
+            primaryImplementation = clazz;
+            primaryCount++;
+          }
+        }
+      }
 
-    try {
-      ReflectionUtils.runPreInitializationMethods(clazzToResolve);
-
-      Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
-      Parameter[] parameters = constructorToUse.getParameters();
-      Object newlyCreatedInstance;
-
-      if (parameters.length == 0) {
-        newlyCreatedInstance = constructorToUse.newInstance();
+      if (primaryCount == 1) {
+        return resolveDependency(
+            primaryImplementation,
+            primaryImplementation.getName(),
+            threadPoolExecutor,
+            scannedClasses);
+      } else if (primaryCount == 0) {
+        throw new OblivionException(
+            String.format(
+                "Dependency not satisfied for interface '%s'. Is there a class implementing this"
+                    + " interface annotated with @OblivionPrimary?",
+                clazzToResolve.getName()));
       } else {
-        List<Object> resolvedArguments = new ArrayList<>();
+        throw new OblivionException(
+            String.format(
+                "Ambiguos dependency for interface '%s'. Multiple implementations annotated with"
+                    + " @OblivionPrimary found!",
+                clazzToResolve.getName()));
+      }
+    } else {
 
-        for (Parameter parameter : parameters) {
-          Class<?> dependencyClass = parameter.getType();
-          Object dependencyInstance =
-              resolveDependency(dependencyClass, classIdentifier, threadPoolExecutor);
-          resolvedArguments.add(dependencyInstance);
+      if (!clazzToResolve.isAnnotationPresent(OblivionService.class)) {
+        throw new OblivionException(
+            String.format(
+                "Cannot resolve class '%s'! Is this class annotated with '@OblivionService'?",
+                clazzToResolve.getSimpleName()));
+      }
+
+      if (currentlyCreatingBeans.contains(clazzToResolve)) {
+        throw new OblivionException(
+            String.format(
+                "Possible circular dependency found in class: '%s'. A circular dependency is"
+                    + " something like this: A -> B -> A. A class that depends on another class,"
+                    + " that depends on the previous class.\n"
+                    + " Make sure to double check your classes annotated with @OblivionService",
+                clazzToResolve.getSimpleName()));
+      }
+
+      currentlyCreatingBeans.add(clazzToResolve);
+
+      try {
+        ReflectionUtils.runPreInitializationMethods(clazzToResolve);
+
+        Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
+        Parameter[] parameters = constructorToUse.getParameters();
+        Object newlyCreatedInstance;
+
+        if (parameters.length == 0) {
+          newlyCreatedInstance = constructorToUse.newInstance();
+        } else {
+          List<Object> resolvedArguments = new ArrayList<>();
+
+          for (Parameter parameter : parameters) {
+            Class<?> dependencyClass = parameter.getType();
+            System.out.println("log before rec: ");
+            Object dependencyInstance =
+                resolveDependency(
+                    dependencyClass, classIdentifier, threadPoolExecutor, scannedClasses);
+
+            resolvedArguments.add(dependencyInstance);
+          }
+
+          newlyCreatedInstance = constructorToUse.newInstance(resolvedArguments.toArray());
         }
 
-        newlyCreatedInstance = constructorToUse.newInstance(resolvedArguments.toArray());
+        if (isPrototypeBean == false) {
+          System.out.println("isPrototypeBean: " + isPrototypeBean);
+          System.out.println("registering singleton bean");
+          registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
+        }
+
+        System.out.println("before reflectiojn");
+
+        ReflectionUtils.runPostConstructMethods(
+            clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+        ReflectionUtils.runPostInitializationMethods(
+            clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
+        ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
+
+        return newlyCreatedInstance;
+      } finally {
+        currentlyCreatingBeans.remove(clazzToResolve);
       }
-
-      if (isPrototypeBean == false) {
-        registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
-      }
-
-      ReflectionUtils.runPostConstructMethods(
-          clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-      ReflectionUtils.runPostInitializationMethods(
-          clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-      ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
-
-      return newlyCreatedInstance;
-    } finally {
-      currentlyCreatingBeans.remove(clazzToResolve);
     }
   }
 

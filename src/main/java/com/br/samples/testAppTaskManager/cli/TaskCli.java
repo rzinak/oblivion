@@ -1,11 +1,5 @@
 package com.br.samples.testAppTaskManager.cli;
 
-import com.br.oblivion.annotations.OblivionPostConstruct;
-import com.br.oblivion.annotations.OblivionPostInitialization;
-import com.br.oblivion.annotations.OblivionPostShutdown;
-import com.br.oblivion.annotations.OblivionPreDestroy;
-import com.br.oblivion.annotations.OblivionPreInitialization;
-import com.br.oblivion.annotations.OblivionPreShutdown;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.testAppTaskManager.service.TaskService;
@@ -20,34 +14,38 @@ public class TaskCli {
     this.taskService = taskService;
   }
 
-  @OblivionPreInitialization
-  public static void preInit() {
-    System.out.println("TASK CLI | PreInitialization");
-  }
+  // @OblivionPreInitialization
+  // public static void preInit() {
+  //   System.out.println("TASK CLI | PreInitialization");
+  // }
+  //
+  // @OblivionPostConstruct
+  // public void postConstruct() {
+  //   System.out.println("TASK CLI | PostConstruct");
+  // }
+  //
+  // @OblivionPostInitialization
+  // public void postInitialization() {
+  //   System.out.println("TASK CLI | PostInitialization");
+  // }
+  //
+  // @OblivionPreDestroy
+  // public void preDestroy() {
+  //   System.out.println("TASK CLI | PreDestroy");
+  // }
+  //
+  // @OblivionPreShutdown
+  // public void preShutdown() {
+  //   System.out.println("TASK CLI | PreShutdown");
+  // }
+  //
+  // @OblivionPostShutdown
+  // public void postShutdown() {
+  //   System.out.println("TASK CLI | PostShutdown");
+  // }
 
-  @OblivionPostConstruct
-  public void postConstruct() {
-    System.out.println("TASK CLI | PostConstruct");
-  }
-
-  @OblivionPostInitialization
-  public void postInitialization() {
-    System.out.println("TASK CLI | PostInitialization");
-  }
-
-  @OblivionPreDestroy
-  public void preDestroy() {
-    System.out.println("TASK CLI | PreDestroy");
-  }
-
-  @OblivionPreShutdown
-  public void preShutdown() {
-    System.out.println("TASK CLI | PreShutdown");
-  }
-
-  @OblivionPostShutdown
-  public void postShutdown() {
-    System.out.println("TASK CLI | PostShutdown");
+  public void t() {
+    System.out.println("TASKCLI RUNNING!");
   }
 
   public void run() {
