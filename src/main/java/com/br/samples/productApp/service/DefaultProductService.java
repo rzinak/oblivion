@@ -1,5 +1,6 @@
 package com.br.samples.productApp.service;
 
+import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import com.br.samples.productApp.repository.ProductRepository;
@@ -12,7 +13,7 @@ public class DefaultProductService {
 
   private final ProductRepository repository;
 
-  public DefaultProductService(ProductRepository repository) {
+  public DefaultProductService(@OblivionQualifier(name = "DBREPO") ProductRepository repository) {
     System.out.println(
         "DefaultProductService created with repository: " + repository.getClass().getSimpleName());
     this.repository = repository;

@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface OblivionService {
+@Target(ElementType.PARAMETER)
+public @interface OblivionQualifier {
   public String name() default "";
 }

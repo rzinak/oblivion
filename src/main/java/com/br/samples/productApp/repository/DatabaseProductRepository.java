@@ -1,6 +1,5 @@
 package com.br.samples.productApp.repository;
 
-import com.br.oblivion.annotations.OblivionPostInitialization;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import java.util.ArrayList;
@@ -9,13 +8,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@OblivionService
+@OblivionService(name = "DBREPO")
 public class DatabaseProductRepository implements ProductRepository {
 
-  @OblivionPostInitialization
-  public void sayHi() {
-    System.out.println("Running inside DatabaseProductRepository");
-  }
+  // @OblivionPostInitialization
+  // public void sayHi() {
+  //   System.out.println("Running inside DatabaseProductRepository");
+  // }
 
   private final Map<String, Product> database = new ConcurrentHashMap<>();
 

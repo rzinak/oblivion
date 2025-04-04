@@ -1,11 +1,12 @@
 package com.br.oblivion.container;
 
 import com.br.oblivion.annotations.OblivionConstructorInject;
-import com.br.oblivion.annotations.OblivionPrimary;
 import com.br.oblivion.annotations.OblivionPrototype;
+import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.exception.OblivionException;
 import com.br.oblivion.util.ReflectionUtils;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -93,10 +94,9 @@ public class BeansContainer {
       Class<?> clazzToResolve,
       String classIdentifier,
       ThreadPoolExecutor threadPoolExecutor,
-      Set<Class<?>> scannedClasses)
+      Set<Class<?>> scannedClasses,
+      String requestQualifier)
       throws Exception {
-
-    System.out.println("CURR CLASS RESOLVEDEPENDENCY: " + clazzToResolve.getSimpleName());
 
     boolean isPrototypeBean = false;
     if (clazzToResolve.isAnnotationPresent(OblivionPrototype.class)) {
@@ -111,42 +111,86 @@ public class BeansContainer {
       }
     }
 
+    String qualifierName = null;
+
     if (clazzToResolve.isInterface()) {
-      System.out.println("is interface -> " + clazzToResolve.getSimpleName());
+      Class<?> foundImplementation = null;
+      int implementationsFound = 0;
 
-      Class<?> primaryImplementation = null;
-      int primaryCount = 0;
+      if (requestQualifier != null && !requestQualifier.trim().isEmpty()) {
+        for (Class<?> clazz : scannedClasses) {
+          if (clazzToResolve.isAssignableFrom(clazz)) {
+            OblivionService serviceAnnotation = clazz.getAnnotation(OblivionService.class);
+            String qualifyName = null;
 
-      for (Class<?> clazz : scannedClasses) {
-        if (clazzToResolve.isAssignableFrom(clazz)) {
-          if (clazz.isAnnotationPresent(OblivionPrimary.class)) {
-            primaryImplementation = clazz;
-            primaryCount++;
+            if (serviceAnnotation != null & serviceAnnotation.name() != null
+                && !serviceAnnotation.name().trim().isEmpty()) {
+              qualifyName = serviceAnnotation.name();
+            }
+
+            if (requestQualifier.equals(qualifyName)) {
+              foundImplementation = clazz;
+              implementationsFound++;
+            }
           }
         }
-      }
 
-      if (primaryCount == 1) {
-        return resolveDependency(
-            primaryImplementation,
-            primaryImplementation.getName(),
-            threadPoolExecutor,
-            scannedClasses);
-      } else if (primaryCount == 0) {
-        throw new OblivionException(
-            String.format(
-                "Dependency not satisfied for interface '%s'. Is there a class implementing this"
-                    + " interface annotated with @OblivionPrimary?",
-                clazzToResolve.getName()));
+        if (implementationsFound == 1) {
+          return resolveDependency(
+              foundImplementation,
+              foundImplementation.getName(),
+              threadPoolExecutor,
+              scannedClasses,
+              null);
+        } else if (implementationsFound == 0) {
+          throw new OblivionException(
+              String.format(
+                  "Dependency not satisfied for interface '%s'. Is there a bean with qualifier"
+                      + " '%s'?",
+                  clazzToResolve.getName(), requestQualifier));
+        } else {
+          throw new OblivionException(
+              String.format(
+                  "Ambiguos dependency for interface '%s'. Multiple implementations found with"
+                      + " qualifier '%s' @OblivionPrimary found!",
+                  clazzToResolve.getName(), requestQualifier));
+        }
+
       } else {
-        throw new OblivionException(
-            String.format(
-                "Ambiguos dependency for interface '%s'. Multiple implementations annotated with"
-                    + " @OblivionPrimary found!",
-                clazzToResolve.getName()));
+        Class<?> primaryImplementation = null;
+        int primaryCount = 0;
+
+        for (Class<?> clazz : scannedClasses) {
+          if (clazzToResolve.isAssignableFrom(clazz)) {
+            if (clazzToResolve.isAnnotationPresent(OblivionQualifier.class)) {
+              primaryImplementation = clazz;
+              primaryCount++;
+            }
+          }
+        }
+
+        if (primaryCount == 1) {
+          return resolveDependency(
+              primaryImplementation,
+              primaryImplementation.getName(),
+              threadPoolExecutor,
+              scannedClasses,
+              qualifierName);
+        } else if (primaryCount == 0) {
+          throw new OblivionException(
+              String.format(
+                  "Dependency not satisfied for interface '%s'. Is there a class implementing this"
+                      + " interface annotated with @OblivionPrimary?",
+                  clazzToResolve.getName()));
+        } else {
+          throw new OblivionException(
+              String.format(
+                  "Ambiguos dependency for interface '%s'. Multiple implementations annotated with"
+                      + " @OblivionPrimary found!",
+                  clazzToResolve.getName()));
+        }
       }
     } else {
-
       if (!clazzToResolve.isAnnotationPresent(OblivionService.class)) {
         throw new OblivionException(
             String.format(
@@ -171,6 +215,17 @@ public class BeansContainer {
 
         Constructor<?> constructorToUse = findInjectableConstructor(clazzToResolve);
         Parameter[] parameters = constructorToUse.getParameters();
+
+        for (Parameter p : parameters) {
+          Annotation[] annotations = p.getAnnotations();
+          for (Annotation annotation : annotations) {
+            if (annotation instanceof OblivionQualifier) {
+              OblivionQualifier qualifier = (OblivionQualifier) annotation;
+              qualifierName = qualifier.name();
+            }
+          }
+        }
+
         Object newlyCreatedInstance;
 
         if (parameters.length == 0) {
@@ -180,10 +235,13 @@ public class BeansContainer {
 
           for (Parameter parameter : parameters) {
             Class<?> dependencyClass = parameter.getType();
-            System.out.println("log before rec: ");
             Object dependencyInstance =
                 resolveDependency(
-                    dependencyClass, classIdentifier, threadPoolExecutor, scannedClasses);
+                    dependencyClass,
+                    classIdentifier,
+                    threadPoolExecutor,
+                    scannedClasses,
+                    qualifierName);
 
             resolvedArguments.add(dependencyInstance);
           }
@@ -192,12 +250,8 @@ public class BeansContainer {
         }
 
         if (isPrototypeBean == false) {
-          System.out.println("isPrototypeBean: " + isPrototypeBean);
-          System.out.println("registering singleton bean");
           registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
         }
-
-        System.out.println("before reflectiojn");
 
         ReflectionUtils.runPostConstructMethods(
             clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
@@ -219,6 +273,20 @@ public class BeansContainer {
             .filter(c -> c.isAnnotationPresent(OblivionConstructorInject.class))
             .findFirst();
     return constructorToInject.orElse(constructors[0]);
+  }
+
+  private String getQualifierName(Class<?> clazz) throws OblivionException {
+    try {
+      Annotation annotation = clazz.getAnnotation(OblivionQualifier.class);
+      if (annotation != null) {
+        Method qualifierMethod = OblivionQualifier.class.getMethod("name");
+        String qualifierName = (String) qualifierMethod.invoke(annotation);
+        return qualifierName;
+      }
+      return null;
+    } catch (Exception ex) {
+      throw new OblivionException("failed inside getQualifierName -> " + ex.getMessage());
+    }
   }
 
   public Map<?, Object> getAllSingletonBeans() {

@@ -1,7 +1,5 @@
 package com.br.samples.productApp.repository;
 
-import com.br.oblivion.annotations.OblivionPostInitialization;
-import com.br.oblivion.annotations.OblivionPrimary;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import java.util.ArrayList;
@@ -11,13 +9,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @OblivionService
-@OblivionPrimary
 public class InMemoryProductRepository implements ProductRepository {
 
-  @OblivionPostInitialization
-  public void sayHi() {
-    System.out.println("Running inside InMemoryProductRepository");
-  }
+  // @OblivionPostInitialization
+  // public void sayHi() {
+  //   System.out.println("Running inside InMemoryProductRepository");
+  // }
 
   private final Map<String, Product> memoryStore = new ConcurrentHashMap<>();
 

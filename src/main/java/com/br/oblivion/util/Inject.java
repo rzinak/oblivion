@@ -33,11 +33,11 @@ public class Inject {
           if ("singleton".equals(beanType)) {
             beanObject =
                 beansContainer.resolveDependency(
-                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses);
+                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null);
           } else if ("prototype".equals(beanType)) {
             beanObject =
                 beansContainer.resolveDependency(
-                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses);
+                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null);
           }
           if (beanObject != null) {
             f.setAccessible(true);
@@ -54,12 +54,14 @@ public class Inject {
         String beanType = getBeanType(beanClass, beansContainer);
 
         if ("singleton".equals(beanType)) {
-          beansContainer.resolveDependency(beanClass, beanName, threadPoolExecutor, scannedClasses);
+          beansContainer.resolveDependency(
+              beanClass, beanName, threadPoolExecutor, scannedClasses, null);
           beansContainer.getSingletonBean(beanName);
         } else if ("prototype".equals(beanType)) {
           // NOTE: since im using a simple file, theres no way to use annotations, and other stuff
           // so later i intend to change to another file format to support all of these features.
-          beansContainer.resolveDependency(beanClass, beanName, threadPoolExecutor, scannedClasses);
+          beansContainer.resolveDependency(
+              beanClass, beanName, threadPoolExecutor, scannedClasses, null);
         }
       }
     } catch (Exception ex) {
