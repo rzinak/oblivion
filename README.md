@@ -39,6 +39,10 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 - `@OblivionPostShutdown` - Executes a method after the container shuts down.
 
+- `@OblivionPrimary` - Marks a default interface's implementation to be injected.
+
+- `@OblivionQualifier` - Explicitly indicate an interface's implementation to be injected.
+
 ### Quick Start
 
 *Note that this is not 100% the way I expect Oblivion to be used in the future, it's still in a very early development stage and implementation in external apps is very limited.*
@@ -247,8 +251,6 @@ So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.
 
 ### Future work
 
-- **Handle Circular Dependencies** (more scalable DI management).
 - **Improve Error Handling**
 - **Improve Resource Cleanup** (like closing DB connections).
 - **Custom Lifecycle Phases** (let users define custom lifecycle annotations).
-- **Improve app's entry point detection** (config files, manifest files... but for now it's alright).
