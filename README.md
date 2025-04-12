@@ -184,6 +184,132 @@ public class TaskRepository {
 }
 ```
 
+**It's also possible to work with different implementations**
+
+```java
+public interface ProductRepository {
+
+  void save(Product product);
+
+  Optional<Product> findById(String id);
+
+  List<Product> findAll();
+}
+```
+
+You can either use `@OblivionPrimary` on a class that implements an interface, to mark it as a default bean to be injected:
+
+```java
+@OblivionService
+public class DefaultProductService {
+  private final ProductRepository repository;
+
+  public DefaultProductService(ProductRepository repository) {
+    System.out.println(
+        "DefaultProductService created with repository: " + repository.getClass().getSimpleName());
+    this.repository = repository;
+  }
+
+  public Product createProduct(String name) {
+    String id = UUID.randomUUID().toString().substring(0, 8);
+    Product newProduct = new Product(id, name);
+    repository.save(newProduct);
+    return newProduct;
+  }
+
+  public Optional<Product> getProduct(String id) {
+    return repository.findById(id);
+  }
+
+  public List<Product> getAllProducts() {
+    return repository.findAll();
+  }
+}
+```
+
+```java
+@OblivionService
+@OblivionPrimary
+public class InMemoryProductRepository implements ProductRepository {
+  private final Map<String, Product> memoryStore = new ConcurrentHashMap<>();
+
+  @Override
+  public void save(Product product) {
+    System.out.println("[MEM REPO] Saving product to memory: " + product);
+    memoryStore.put(product.getId(), product);
+  }
+
+  @Override
+  public Optional<Product> findById(String id) {
+    System.out.println("[MEM REPO] Finding product by ID in memory: " + id);
+    return Optional.ofNullable(memoryStore.get(id));
+  }
+
+  @Override
+  public List<Product> findAll() {
+    System.out.println("[MEM REPO] Finding all products in memory.");
+    return new ArrayList<>(memoryStore.values());
+  }
+}
+```
+
+Or `@OblivionQualifier(name = "...")` and `@OblivionService(name = "...")`, to explicitly indicate an implementation to be used:
+
+```java
+@OblivionService
+public class DefaultProductService {
+  private final ProductRepository repository;
+
+  public DefaultProductService(@OblivionQualifier(name = "DBREPO") ProductRepository repository) {
+    System.out.println(
+        "DefaultProductService created with repository: " + repository.getClass().getSimpleName());
+    this.repository = repository;
+  }
+
+  public Product createProduct(String name) {
+    String id = UUID.randomUUID().toString().substring(0, 8);
+    Product newProduct = new Product(id, name);
+    repository.save(newProduct);
+    return newProduct;
+  }
+
+  public Optional<Product> getProduct(String id) {
+    return repository.findById(id);
+  }
+
+  public List<Product> getAllProducts() {
+    return repository.findAll();
+  }
+}
+```
+
+```java
+@OblivionService(name = "DBREPO")
+public class DatabaseProductRepository implements ProductRepository {
+  private final Map<String, Product> database = new ConcurrentHashMap<>();
+
+  @Override
+  public void save(Product product) {
+    System.out.println("[DB REPO] Saving product to database: " + product);
+    database.put(product.getId(), product);
+  }
+
+  @Override
+  public Optional<Product> findById(String id) {
+    System.out.println("[DB REPO] Finding product by ID in database: " + id);
+    return Optional.ofNullable(database.get(id));
+  }
+
+  @Override
+  public List<Product> findAll() {
+    System.out.println("[DB REPO] Finding all products in database.");
+    return new ArrayList<>(database.values());
+  }
+}
+```
+
+*Note that the name passed in the `@OblivionService` and in `@OblivionQualifier` must match, so Oblivion can figure out which implementation to use.*
+
 ---
 
 ### Advanced Features
@@ -249,8 +375,20 @@ So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.
 
 ---
 
-### Future work
+### Currently working on
 
-- **Improve Error Handling**
+- **AOP Integration**
+- **Lifecycle Extensibility**
+- **Bean Definition Manipulation**
+
+### Future work (maybe)
+
+- **Advanced Scopes** (web scopes, to use Oblivion with Servlets, for example...).
+- **Context Management** (allow users to define new scopes beyond singleton and prototype, it seems to be complex, but looks cool. i believe i have to define an api for 'scope management' -- like fetching, creating, destroying the bean within this scope -- and need to find a way to make it work with oblivion resolution mechanism i have).
+- **Profiles** - (i can go beyond simple 'cond' i have for beans, like introducing "dev", "test" and "production" profiles, so certain benas of the entire stuff would only be registered if a specific profile is active, should think of a way to activate a profile tho)
+- **Unified Property Management** (instead of multiple config files for different stuff, it might be cool to add them all together)
 - **Improve Resource Cleanup** (like closing DB connections).
-- **Custom Lifecycle Phases** (let users define custom lifecycle annotations).
+- **Custom Lifecycle Phases** (let users define custom lifecycle annotations -- *idk about this one tho, maybe wont do...*).
+- **Event Publishing/Listening** (this one is cool as hell, i think guava has this but wanna do my own... basically i think i could implement an application-wide event bus and use an annotation like `@OblivionEventPublisher` to publish custom event objects, and beans with `@OblivionEventListener` will get invoked when a specific type of event is published, and i already have sync/async in Oblivion, so i can use it as well... its cool because instead of a 'chain' of bean call, they would react independently)
+- **Add Support to JSR-330** (use standard DI annotations, to allow an easier integration with other libs using it)
+- **Factory Bean**
