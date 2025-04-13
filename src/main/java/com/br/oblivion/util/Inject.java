@@ -4,10 +4,12 @@ import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.stream.Collectors;
 import org.reflections.Reflections;
 
 public class Inject {
@@ -25,6 +27,20 @@ public class Inject {
 
       Reflections generalScan = new Reflections(rootPackage);
       Set<Class<?>> scannedClasses = generalScan.getTypesAnnotatedWith(OblivionService.class);
+      Set<Class<?>> postProcessorClasses =
+          scannedClasses.stream()
+              .filter(c -> OblivionBeanPostProcessor.class.isAssignableFrom(c))
+              .collect(Collectors.toSet());
+
+      for (Class<?> postProcessorClass : postProcessorClasses) {
+        beansContainer.resolveDependency(
+            postProcessorClass,
+            postProcessorClass.getName(),
+            threadPoolExecutor,
+            scannedClasses,
+            null,
+            true);
+      }
 
       for (Field f : fields) {
         if (f.isAnnotationPresent(OblivionWire.class)) {
@@ -33,11 +49,11 @@ public class Inject {
           if ("singleton".equals(beanType)) {
             beanObject =
                 beansContainer.resolveDependency(
-                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null);
+                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null, false);
           } else if ("prototype".equals(beanType)) {
             beanObject =
                 beansContainer.resolveDependency(
-                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null);
+                    f.getType(), f.getName(), threadPoolExecutor, scannedClasses, null, false);
           }
           if (beanObject != null) {
             f.setAccessible(true);
@@ -55,13 +71,13 @@ public class Inject {
 
         if ("singleton".equals(beanType)) {
           beansContainer.resolveDependency(
-              beanClass, beanName, threadPoolExecutor, scannedClasses, null);
+              beanClass, beanName, threadPoolExecutor, scannedClasses, null, false);
           beansContainer.getSingletonBean(beanName);
         } else if ("prototype".equals(beanType)) {
           // NOTE: since im using a simple file, theres no way to use annotations, and other stuff
           // so later i intend to change to another file format to support all of these features.
           beansContainer.resolveDependency(
-              beanClass, beanName, threadPoolExecutor, scannedClasses, null);
+              beanClass, beanName, threadPoolExecutor, scannedClasses, null, false);
         }
       }
     } catch (Exception ex) {

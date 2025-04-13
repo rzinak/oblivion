@@ -378,7 +378,6 @@ So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.
 ### Currently working on
 
 - **AOP Integration**
-- **Lifecycle Extensibility**
 - **Bean Definition Manipulation**
 
 ### Future work (maybe)

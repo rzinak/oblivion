@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @OblivionService
-public class InMemoryProductRepository implements ProductRepository {
+public class InMemoryProductRepository implements ProductRepository, TrackableRepository {
 
   // @OblivionPostInitialization
   // public void sayHi() {

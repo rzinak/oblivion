@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @OblivionService(name = "DBREPO")
-public class DatabaseProductRepository implements ProductRepository {
+public class DatabaseProductRepository implements ProductRepository, TrackableRepository {
 
   // @OblivionPostInitialization
   // public void sayHi() {

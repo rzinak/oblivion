@@ -5,6 +5,7 @@ import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.exception.OblivionException;
+import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import com.br.oblivion.util.ReflectionUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -24,6 +25,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class BeansContainer {
   private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
   private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
+
+  private final List<OblivionBeanPostProcessor> postProcessorBeans = new ArrayList<>();
 
   // lifecycle methods
   private static List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
@@ -95,7 +98,8 @@ public class BeansContainer {
       String classIdentifier,
       ThreadPoolExecutor threadPoolExecutor,
       Set<Class<?>> scannedClasses,
-      String requestQualifier)
+      String requestQualifier,
+      Boolean isPostProcessor)
       throws Exception {
 
     boolean isPrototypeBean = false;
@@ -141,7 +145,8 @@ public class BeansContainer {
               foundImplementation.getName(),
               threadPoolExecutor,
               scannedClasses,
-              null);
+              null,
+              false);
         } else if (implementationsFound == 0) {
           throw new OblivionException(
               String.format(
@@ -175,7 +180,8 @@ public class BeansContainer {
               primaryImplementation.getName(),
               threadPoolExecutor,
               scannedClasses,
-              qualifierName);
+              qualifierName,
+              false);
         } else if (primaryCount == 0) {
           throw new OblivionException(
               String.format(
@@ -241,7 +247,8 @@ public class BeansContainer {
                     classIdentifier,
                     threadPoolExecutor,
                     scannedClasses,
-                    qualifierName);
+                    qualifierName,
+                    false);
 
             resolvedArguments.add(dependencyInstance);
           }
@@ -253,13 +260,46 @@ public class BeansContainer {
           registerSingletonBean(clazzToResolve.getSimpleName(), newlyCreatedInstance);
         }
 
-        ReflectionUtils.runPostConstructMethods(
-            clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-        ReflectionUtils.runPostInitializationMethods(
-            clazzToResolve, newlyCreatedInstance, threadPoolExecutor);
-        ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, newlyCreatedInstance);
+        Object currentBeanInstance = newlyCreatedInstance;
 
-        return newlyCreatedInstance;
+        if (isPostProcessor == true) {
+          if (newlyCreatedInstance instanceof OblivionBeanPostProcessor) {
+            postProcessorBeans.add((OblivionBeanPostProcessor) newlyCreatedInstance);
+          }
+        }
+
+        System.out.println("**BEFORE** | current bean instance -> " + currentBeanInstance);
+
+        // apply BEFORE initialization post processors
+        for (OblivionBeanPostProcessor processor : postProcessorBeans) {
+          currentBeanInstance =
+              processor.postProcessorBeforeInitialization(
+                  currentBeanInstance, currentBeanInstance.getClass().getName());
+        }
+
+        System.out.println("**BEFORE** | current bean instance modified -> " + currentBeanInstance);
+
+        ReflectionUtils.runPostConstructMethods(
+            clazzToResolve, currentBeanInstance, threadPoolExecutor);
+        ReflectionUtils.runPostInitializationMethods(
+            clazzToResolve, currentBeanInstance, threadPoolExecutor);
+
+        Object finalBeanInstance = currentBeanInstance;
+
+        System.out.println("**AFTER** | final bean instance -> " + finalBeanInstance);
+
+        // apply AFTER initialization post processors
+        for (OblivionBeanPostProcessor processor : postProcessorBeans) {
+          finalBeanInstance =
+              processor.postProcessorAfterInitialization(
+                  finalBeanInstance, finalBeanInstance.getClass().getName());
+        }
+
+        System.out.println("**AFTER** | final bean instance -> " + finalBeanInstance);
+
+        ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, finalBeanInstance);
+
+        return finalBeanInstance;
       } finally {
         currentlyCreatingBeans.remove(clazzToResolve);
       }
@@ -275,56 +315,46 @@ public class BeansContainer {
     return constructorToInject.orElse(constructors[0]);
   }
 
-  private String getQualifierName(Class<?> clazz) throws OblivionException {
-    try {
-      Annotation annotation = clazz.getAnnotation(OblivionQualifier.class);
-      if (annotation != null) {
-        Method qualifierMethod = OblivionQualifier.class.getMethod("name");
-        String qualifierName = (String) qualifierMethod.invoke(annotation);
-        return qualifierName;
-      }
-      return null;
-    } catch (Exception ex) {
-      throw new OblivionException("failed inside getQualifierName -> " + ex.getMessage());
-    }
-  }
-
   public Map<?, Object> getAllSingletonBeans() {
-    if (singletonBeans.isEmpty()) {
-      return null;
-    }
+    if (singletonBeans.isEmpty()) return null;
+
     return singletonBeans;
   }
 
   public Map<String, PrototypeBeanMetadata> getAllPrototypenBeans() {
-    if (prototypeBeans.isEmpty()) {
-      return null;
-    }
+    if (prototypeBeans.isEmpty()) return null;
+
     return prototypeBeans;
   }
 
+  public List<OblivionBeanPostProcessor> getAllPostProcessorBeans() {
+    if (postProcessorBeans.isEmpty()) return null;
+
+    return postProcessorBeans;
+  }
+
   public List<Pair<Object, Method>> getPreDestroyMethods() {
-    return this.preDestroyMethods;
+    return preDestroyMethods;
   }
 
   public List<Pair<Object, Method>> getPreShutdownMethods() {
-    return this.preShutdownMethods;
+    return preShutdownMethods;
   }
 
   public List<Pair<Object, Method>> getPostShutdownMethods() {
-    return this.postShutdownMethods;
+    return postShutdownMethods;
   }
 
   public void clearPreDestroyMap() {
-    this.preDestroyMethods.clear();
+    preDestroyMethods.clear();
   }
 
   public void clearPreShutdownMap() {
-    this.preShutdownMethods.clear();
+    preShutdownMethods.clear();
   }
 
   public void clearPostShutdownMap() {
-    this.postShutdownMethods.clear();
+    postShutdownMethods.clear();
   }
 
   public void clearSingletonBeansMap() {
