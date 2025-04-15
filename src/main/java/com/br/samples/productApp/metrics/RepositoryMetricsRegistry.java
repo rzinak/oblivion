@@ -29,12 +29,10 @@ public class RepositoryMetricsRegistry implements OblivionBeanPostProcessor {
     System.out.println(
         "POST PROCESSOR AFTER INITIALIZATION BEAN-> " + bean + " BEAN NAME -> " + beanName);
     if (bean instanceof TrackableRepository) {
-      System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
       System.out.println("[METRICS REGISTRY] Detected TrackableRepository -> " + beanName);
       // then we register in the metrics
       this.metricsService.registerRepository(beanName);
     }
-    // always returning the bean, will be we wrappin only when i implemen the proxy stuff
     return bean;
   }
 }

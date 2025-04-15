@@ -32,6 +32,9 @@ public class Inject {
               .filter(c -> OblivionBeanPostProcessor.class.isAssignableFrom(c))
               .collect(Collectors.toSet());
 
+      OblivionAopProxyCreator aopProxyCreator = new OblivionAopProxyCreator();
+      beansContainer.postProcessorBeans.add(aopProxyCreator);
+
       for (Class<?> postProcessorClass : postProcessorClasses) {
         beansContainer.resolveDependency(
             postProcessorClass,
