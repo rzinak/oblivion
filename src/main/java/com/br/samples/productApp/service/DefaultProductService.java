@@ -1,5 +1,6 @@
 package com.br.samples.productApp.service;
 
+import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionPostConstruct;
 import com.br.oblivion.annotations.OblivionPostInitialization;
 import com.br.oblivion.annotations.OblivionPostShutdown;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @OblivionService
 @OblivionPrototype
+@OblivionLoggable
 public class DefaultProductService {
 
   private final ProductRepository repository;

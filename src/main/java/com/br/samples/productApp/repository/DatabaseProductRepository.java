@@ -10,12 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @OblivionService(name = "DBREPO")
 public class DatabaseProductRepository implements ProductRepository, TrackableRepository {
-
-  // @OblivionPostInitialization
-  // public void sayHi() {
-  //   System.out.println("Running inside DatabaseProductRepository");
-  // }
-
   private final Map<String, Product> database = new ConcurrentHashMap<>();
 
   @Override

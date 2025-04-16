@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp target/oblivion-1.0.jar com.br.Oblivion "$@"
+java --add-opens java.base/java.lang=ALL-UNNAMED -cp target/oblivion-1.0.jar com.br.Oblivion "$@"

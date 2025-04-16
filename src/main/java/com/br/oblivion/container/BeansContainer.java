@@ -26,7 +26,7 @@ public class BeansContainer {
   private final Map<String, Object> singletonBeans = new ConcurrentHashMap<>();
   private Map<String, PrototypeBeanMetadata> prototypeBeans = new ConcurrentHashMap<>();
 
-  private final List<OblivionBeanPostProcessor> postProcessorBeans = new ArrayList<>();
+  public final List<OblivionBeanPostProcessor> postProcessorBeans = new ArrayList<>();
 
   // lifecycle methods
   private static List<Pair<Object, Method>> preDestroyMethods = new ArrayList<>();
@@ -268,16 +268,12 @@ public class BeansContainer {
           }
         }
 
-        System.out.println("**BEFORE** | current bean instance -> " + currentBeanInstance);
-
         // apply BEFORE initialization post processors
         for (OblivionBeanPostProcessor processor : postProcessorBeans) {
           currentBeanInstance =
               processor.postProcessorBeforeInitialization(
                   currentBeanInstance, currentBeanInstance.getClass().getName());
         }
-
-        System.out.println("**BEFORE** | current bean instance modified -> " + currentBeanInstance);
 
         ReflectionUtils.runPostConstructMethods(
             clazzToResolve, currentBeanInstance, threadPoolExecutor);
@@ -286,16 +282,12 @@ public class BeansContainer {
 
         Object finalBeanInstance = currentBeanInstance;
 
-        System.out.println("**AFTER** | final bean instance -> " + finalBeanInstance);
-
         // apply AFTER initialization post processors
         for (OblivionBeanPostProcessor processor : postProcessorBeans) {
           finalBeanInstance =
               processor.postProcessorAfterInitialization(
                   finalBeanInstance, finalBeanInstance.getClass().getName());
         }
-
-        System.out.println("**AFTER** | final bean instance -> " + finalBeanInstance);
 
         ReflectionUtils.registerPersistentBeanLifecycles(clazzToResolve, finalBeanInstance);
 

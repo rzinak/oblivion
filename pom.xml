@@ -45,6 +45,17 @@
       <artifactId>reflections</artifactId>
       <version>0.10.2</version>
     </dependency>
+    <dependency>
+      <groupId>cglib</groupId>
+      <artifactId>cglib</artifactId>
+      <version>3.3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
+      <version>3.4</version>
+    </dependency>
+
   </dependencies>
 
   <build>

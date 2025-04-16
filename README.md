@@ -31,8 +31,6 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 - `@OblivionPreDestroy`: Executes before the bean is destroyed.
 
-- `@OblivionPostShutdown`: Executes after the container shuts down.
-
 - `@OblivionPrototype`: Defines prototype beans (each request creates a new instance).
 
 - `@OblivionPreShutdown`: Executes before the container shuts down.
@@ -373,11 +371,114 @@ The `oblivion.config` expects the following structure: `Annotation:Class`.
 
 So we can use it like this: `OblivionWire:com.br.samples.testAppTaskManager.cli.TaskCli`
 
+**Lifecycle Extensibility -- OblivionPostProcessor**
+
+You can implement the OblivionBeanPostProcessor interface and override the postProcessorBeforeInitialization and postProcessorAfterInitialization methods to hook into the bean creation lifecycle. This allows you to inspect, modify, or even replace bean instances after instantiation but before they are fully available for use. Implementations must be marked as an @OblivionService to be discovered, or registered programmatically if internal to the framework. Oblivion will apply all discovered post-processors to each bean instance being created.
+
+ - `postProcessBeforeInitialization(Object bean, String beanName)`: Runs after basic instantiation and dependency injection, but before standard initialization callbacks like `@OblivionPostConstruct`.
+
+ - `postProcessAfterInitialization(Object bean, String beanName)`: Runs after all standard initialization callbacks have completed.
+
+*Crucially, both methods must return a bean instance - either the original or a potentially modified/replaced one (like a proxy).*
+
+```java
+@OblivionService
+public class RepositoryMetricsRegistry implements OblivionBeanPostProcessor {
+
+  private final RepositoryMetricsService metricsService;
+
+  public RepositoryMetricsRegistry(RepositoryMetricsService metricsService) {
+    System.out.println("[METRICS REGISTRY] -> BeanPostProcessor created");
+    this.metricsService = metricsService;
+  }
+
+  @Override
+  public Object postProcessorBeforeInitialization(Object bean, String beanName) {
+    System.out.println("[METRICS REGISTRY] Before initialization -> " + beanName + ", bean -> " + bean);
+    return bean;
+  }
+
+  @Override
+  public Object postProcessorAfterInitialization(Object bean, String beanName) {
+    System.out.println(
+        "[METRICS REGISTRY] After initialization -> " + beanName + ", type -> " + bean.getClass().getName());
+    if (bean instanceof TrackableRepository) {
+      System.out.println("[METRICS REGISTRY] Detected TrackableRepository -> " + beanName);
+      this.metricsService.registerRepository(beanName);
+    }
+    return bean;
+  }
+}
+```
+
+**AOP Proxies (via BeanPostProcessor)**
+
+Oblivion utilizes the `OblivionBeanPostProcessor` mechanism to enable basic Aspect-Oriented Programming (AOP) features through JDK Dynamic Proxies. This allows adding cross-cutting concerns like logging to your beans without modifying their core logic.
+
+ - **JDK Dynamic Proxies**: Used for beans that implement interfaces.
+ - **CGLIB Proxies (with Objenesis)**: Used for concrete class beans (that don't have suitable interfaces for JDK proxying) to bypass constructor limitations.
+
+*Implementation note: CGLIB is needed when there is no interfaces to implement, but CGLIB requires a no-args constructor to work, so Objenesis was used to bypass that. You can see how I did it in the package `com.br.oblivion.util.OblivionAopProxyCreator` class*.
+
+1. **Enable Proxying**: Mark your target bean class (which should implement at least one interface) with the `@OblivionLoggable` annotation (or future AOP-related annotations, Ima update this as I add more :D). This works whether the class implements interfaces or not.
+
+**Interface-based example**
+
+```java
+import com.br.oblivion.annotations.OblivionLoggable;
+
+@OblivionService(name = "DBREPO")
+@OblivionLoggable // Signal to Oblivion's AOP processor
+public class DatabaseProductRepository implements ProductRepository {
+    // ...
+}
+```
+
+**Class-based example**
+```java
+import com.br.oblivion.annotations.OblivionLoggable;
+
+@OblivionService
+@OblivionLoggable // Signal to Oblivion's AOP processor
+public class DefaultProductService { // No relevant interfaces needed
+    // ... constructor with dependencies ...
+}
+```
+
+2. **Framework Handling**: Oblivion includes an internal **OblivionBeanPostProcessor** (*OblivionAopProxyCreator*). During startup, this processor detects beans annotated with *@OblivionLoggable*.
+
+3. **Proxy Creation Strategy**: In its `postProcessAfterInitialization` method, the framework processor checks the bean:
+
+- **If interfaces are present**: It creates a **JDK Dynamic Proxy** that wraps the original bean instance.
+- **If no suitable interfaces are found**: It uses **CGLIB** to create a proxy subclass of the original bean's class. To handle constructors with arguments, Oblivion uses the **Objenesis** library to instantiate the proxy class without calling its constructor.
+
+4. **Invocation Handling**:
+
+- For JDK Proxies, an internal `InvocationHandler` `(OblivionInvocationHandler)` intercepts calls. 
+- For CGLIB Proxies, an internal `MethodInterceptor` `(OblivionCglibInterceptor)` intercepts calls. 
+- Currently, both handlers log basic information before and after invoking the actual method on the original bean instance.
+
+```java
+// Example handler/interceptor logic:
+public Object invokeOrIntercept(Object proxy, Method method, Object[] args, /* MethodProxy */) throws Throwable {
+    System.out.println("[PROXY] Intercepting method: " + method.getName());
+    // Call original bean method (using method.invoke or methodProxy.invokeSuper)
+    Object result = invokeOriginalMethod(originalTarget, method, args, /* methodProxy */);
+    System.out.println("[PROXY] Finished method: " + method.getName());
+    return result;
+}
+}
+```
+
+5. **Injection**: The container injects the appropriate proxy instance(either JDK or CGLIB), not the original bean, into any dependent components.
+
+So when methods are called on beans marked with `@OblivionLoggable`, you'll see `[PROXY]` or `[CGLIB PROXY]` log messages, demonstrating interception via the correct proxy type.
+
 ---
 
 ### Currently working on
 
-- **AOP Integration**
+- **AOP Integration** -> *It's partially done, now I'm improving the current implementation*
 - **Bean Definition Manipulation**
 
 ### Future work (maybe)
