@@ -4,10 +4,10 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class OblivionSimpleInvocationHandler implements InvocationHandler {
+public class OblivionInvocationHandler implements InvocationHandler {
   private final Object originalTarget;
 
-  public OblivionSimpleInvocationHandler(Object originalTarget) {
+  public OblivionInvocationHandler(Object originalTarget) {
     this.originalTarget = originalTarget;
   }
 

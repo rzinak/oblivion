@@ -4,6 +4,11 @@ import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.Factory;
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
+import org.objenesis.instantiator.ObjectInstantiator;
 
 public class OblivionAopProxyCreator implements OblivionBeanPostProcessor {
 
@@ -15,19 +20,31 @@ public class OblivionAopProxyCreator implements OblivionBeanPostProcessor {
     return bean;
   }
 
-  // NOTE: and here, it starts acting after the bean has been instantiated, dependencies
-  // got injected (in the constructor), and its own logic has run. and then i check
-  // if it needs AOP behaviorand wrap it in a proxy before it's fully "ready" by the container
   @Override
   public Object postProcessorAfterInitialization(Object bean, String beanName) {
     if (bean.getClass().isAnnotationPresent(OblivionLoggable.class)) {
-      OblivionSimpleInvocationHandler handler = new OblivionSimpleInvocationHandler(bean);
       Class<?>[] beanInterfaces = bean.getClass().getInterfaces();
-      System.out.println("[PROXY] interfaces -> " + Arrays.toString(beanInterfaces));
-      ClassLoader classLoader = bean.getClass().getClassLoader();
-      Object proxyInstance = Proxy.newProxyInstance(classLoader, beanInterfaces, handler);
-      System.out.println("[PROXY] Created proxy instance -> " + proxyInstance.getClass());
-      return proxyInstance;
+
+      // CGLIB proxy for beans with no suitable interfaces
+      if (beanInterfaces.length == 0 || beanInterfaces == null) {
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(bean.getClass());
+        enhancer.setCallbackType(OblivionCglibInterceptor.class);
+        Class<?> proxyClass = enhancer.createClass();
+        Objenesis objenesis = new ObjenesisStd();
+        ObjectInstantiator<?> instantiator = objenesis.getInstantiatorOf(proxyClass);
+        Object proxyInstance = instantiator.newInstance();
+        ((Factory) proxyInstance).setCallback(0, new OblivionCglibInterceptor(bean));
+        return proxyInstance;
+      } else {
+        // jdk dynamic proxy for beans with suitable interfaces
+        OblivionInvocationHandler handler = new OblivionInvocationHandler(bean);
+        System.out.println("[PROXY] interfaces -> " + Arrays.toString(beanInterfaces));
+        ClassLoader classLoader = bean.getClass().getClassLoader();
+        Object proxyInstance = Proxy.newProxyInstance(classLoader, beanInterfaces, handler);
+        System.out.println("[PROXY] Created proxy instance -> " + proxyInstance.getClass());
+        return proxyInstance;
+      }
     }
 
     return bean;

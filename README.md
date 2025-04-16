@@ -31,8 +31,6 @@ Oblivion is a custom, lightweight dependency injector framework built to help yo
 
 - `@OblivionPreDestroy`: Executes before the bean is destroyed.
 
-- `@OblivionPostShutdown`: Executes after the container shuts down.
-
 - `@OblivionPrototype`: Defines prototype beans (each request creates a new instance).
 
 - `@OblivionPreShutdown`: Executes before the container shuts down.
@@ -413,11 +411,18 @@ public class RepositoryMetricsRegistry implements OblivionBeanPostProcessor {
 }
 ```
 
-** AOP Proxies (via BeanPostProcessor) **
+**AOP Proxies (via BeanPostProcessor)**
 
 Oblivion utilizes the `OblivionBeanPostProcessor` mechanism to enable basic Aspect-Oriented Programming (AOP) features through JDK Dynamic Proxies. This allows adding cross-cutting concerns like logging to your beans without modifying their core logic.
 
-1. **Enable Proxying**: Mark your target bean class (which should implement at least one interface) with the `@OblivionLoggable` annotation (or future AOP-related annotations, Ima update this as I add more :D).
+ - **JDK Dynamic Proxies**: Used for beans that implement interfaces.
+ - **CGLIB Proxies (with Objenesis)**: Used for concrete class beans (that don't have suitable interfaces for JDK proxying) to bypass constructor limitations.
+
+*Implementation note: CGLIB is needed when there is no interfaces to implement, but CGLIB requires a no-args constructor to work, so Objenesis was used to bypass that. You can see how I did it in the package `com.br.oblivion.util.OblivionAopProxyCreator` class*.
+
+1. **Enable Proxying**: Mark your target bean class (which should implement at least one interface) with the `@OblivionLoggable` annotation (or future AOP-related annotations, Ima update this as I add more :D). This works whether the class implements interfaces or not.
+
+**Interface-based example**
 
 ```java
 import com.br.oblivion.annotations.OblivionLoggable;
@@ -429,23 +434,45 @@ public class DatabaseProductRepository implements ProductRepository {
 }
 ```
 
-2. **Framework Handling**: Oblivion includes an internal **OblivionBeanPostProcessor** (*OblivionAopProxyCreator*). During startup, this processor detects beans annotated with *@OblivionLoggable*.
-
-3. **Proxy Creation**: In its `postProcessAfterInitialization` method, the framework processor creates a JDK Dynamic Proxy that wraps the original bean instance. This proxy intercepts method calls.
-
-4. **Invocation Handling**: An internal *InvocationHandler* (`OblivionSimpleInvocationHandler`) is used by the proxy. Currently, it logs basic information before and after invoking the actual method on the original bean instance.
-
+**Class-based example**
 ```java
-// Example of a handler logic:
-public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-    System.out.println("[PROXY] Intercepting method: " + method.getName());
-    Object result = method.invoke(originalTarget, args); // Call to the original bean
-    System.out.println("[PROXY] Finished method: " + method.getName());
-    return result;
+import com.br.oblivion.annotations.OblivionLoggable;
+
+@OblivionService
+@OblivionLoggable // Signal to Oblivion's AOP processor
+public class DefaultProductService { // No relevant interfaces needed
+    // ... constructor with dependencies ...
 }
 ```
 
-5. **Injection**: The container injects the proxy instance, not the original bean, into any dependent components.
+2. **Framework Handling**: Oblivion includes an internal **OblivionBeanPostProcessor** (*OblivionAopProxyCreator*). During startup, this processor detects beans annotated with *@OblivionLoggable*.
+
+3. **Proxy Creation Strategy**: In its `postProcessAfterInitialization` method, the framework processor checks the bean:
+
+- **If interfaces are present**: It creates a **JDK Dynamic Proxy** that wraps the original bean instance.
+- **If no suitable interfaces are found**: It uses **CGLIB** to create a proxy subclass of the original bean's class. To handle constructors with arguments, Oblivion uses the **Objenesis** library to instantiate the proxy class without calling its constructor.
+
+4. **Invocation Handling**:
+
+- For JDK Proxies, an internal `InvocationHandler` `(OblivionInvocationHandler)` intercepts calls. 
+- For CGLIB Proxies, an internal `MethodInterceptor` `(OblivionCglibInterceptor)` intercepts calls. 
+- Currently, both handlers log basic information before and after invoking the actual method on the original bean instance.
+
+```java
+// Example handler/interceptor logic:
+public Object invokeOrIntercept(Object proxy, Method method, Object[] args, /* MethodProxy */) throws Throwable {
+    System.out.println("[PROXY] Intercepting method: " + method.getName());
+    // Call original bean method (using method.invoke or methodProxy.invokeSuper)
+    Object result = invokeOriginalMethod(originalTarget, method, args, /* methodProxy */);
+    System.out.println("[PROXY] Finished method: " + method.getName());
+    return result;
+}
+}
+```
+
+5. **Injection**: The container injects the appropriate proxy instance(either JDK or CGLIB), not the original bean, into any dependent components.
+
+So when methods are called on beans marked with `@OblivionLoggable`, you'll see `[PROXY]` or `[CGLIB PROXY]` log messages, demonstrating interception via the correct proxy type.
 
 ---
 
