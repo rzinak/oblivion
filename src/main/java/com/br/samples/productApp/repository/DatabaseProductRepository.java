@@ -1,5 +1,6 @@
 package com.br.samples.productApp.repository;
 
+import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@OblivionLoggable
 @OblivionService(name = "DBREPO")
 public class DatabaseProductRepository implements ProductRepository, TrackableRepository {
   private final Map<String, Product> database = new ConcurrentHashMap<>();

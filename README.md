@@ -478,7 +478,7 @@ So when methods are called on beans marked with `@OblivionLoggable`, you'll see 
 
 ### Currently working on
 
-- **AOP Integration** -> *It's partially done, now I'm improving the current implementation*
+- **AOP Integration** -> *Partially done! Working on Advice Execution*
 - **Bean Definition Manipulation**
 
 ### Future work (maybe)
