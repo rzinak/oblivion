@@ -1,7 +1,9 @@
 package com.br.oblivion.util;
 
 import com.br.oblivion.annotations.OblivionLoggable;
+import com.br.oblivion.container.BeansContainer;
 import java.lang.reflect.Method;
+import java.util.List;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
@@ -18,6 +20,16 @@ public class OblivionCglibInterceptor implements MethodInterceptor {
   public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy)
       throws Throwable {
     try {
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+
+      if (BeansContainer.adviceBeforeMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.adviceBeforeMap.get(currentMethod);
+
+        for (Method m : methodsToCall) {
+          m.invoke(obj, args);
+        }
+      }
+
       if (method.isAnnotationPresent(OblivionLoggable.class) || isClassLoggable) {
         System.out.println("[GCLIB PROXY] intercepting method -> " + method.getName());
       }
@@ -25,7 +37,6 @@ public class OblivionCglibInterceptor implements MethodInterceptor {
       Object result = method.invoke(this.originalTarget, args);
 
       if (method.isAnnotationPresent(OblivionLoggable.class) || isClassLoggable) {
-        System.out.println("[GCLIB PROXY] intercepting method -> " + method.getName());
         System.out.println("[CGLIB PROXY] finished method -> " + method.getName());
       }
 

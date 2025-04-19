@@ -1,5 +1,6 @@
 package com.br.oblivion.util;
 
+import com.br.oblivion.annotations.OblivionAspect;
 import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Method;
@@ -22,41 +23,43 @@ public class OblivionAopProxyCreator implements OblivionBeanPostProcessor {
 
   @Override
   public Object postProcessorAfterInitialization(Object bean, String beanName) {
-    Method[] beanMethods = bean.getClass().getDeclaredMethods();
+    if (bean.getClass().isAnnotationPresent(OblivionAspect.class)) {
+      Method[] beanMethods = bean.getClass().getDeclaredMethods();
 
-    boolean isClassLoggable = false;
-    boolean isMethodLoggable = false;
+      boolean isClassLoggable = false;
+      boolean isMethodLoggable = false;
 
-    if (bean.getClass().isAnnotationPresent(OblivionLoggable.class)) isClassLoggable = true;
+      if (bean.getClass().isAnnotationPresent(OblivionLoggable.class)) isClassLoggable = true;
 
-    for (Method m : beanMethods) {
-      if (m.isAnnotationPresent(OblivionLoggable.class)) {
-        isMethodLoggable = true;
-        break;
+      for (Method m : beanMethods) {
+        if (m.isAnnotationPresent(OblivionLoggable.class)) {
+          isMethodLoggable = true;
+          break;
+        }
       }
-    }
 
-    if (isClassLoggable || isMethodLoggable) {
-      Class<?>[] beanInterfaces = bean.getClass().getInterfaces();
+      if (isClassLoggable || isMethodLoggable) {
+        Class<?>[] beanInterfaces = bean.getClass().getInterfaces();
 
-      // CGLIB proxy for beans with no suitable interfaces
-      if (beanInterfaces.length == 0 || beanInterfaces == null) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(bean.getClass());
-        enhancer.setCallbackType(OblivionCglibInterceptor.class);
-        Class<?> proxyClass = enhancer.createClass();
-        Objenesis objenesis = new ObjenesisStd();
-        ObjectInstantiator<?> instantiator = objenesis.getInstantiatorOf(proxyClass);
-        Object proxyInstance = instantiator.newInstance();
-        ((Factory) proxyInstance)
-            .setCallback(0, new OblivionCglibInterceptor(bean, isClassLoggable));
-        return proxyInstance;
-      } else {
-        // jdk dynamic proxy for beans with suitable interfaces
-        OblivionInvocationHandler handler = new OblivionInvocationHandler(bean, isClassLoggable);
-        ClassLoader classLoader = bean.getClass().getClassLoader();
-        Object proxyInstance = Proxy.newProxyInstance(classLoader, beanInterfaces, handler);
-        return proxyInstance;
+        // CGLIB proxy for beans with no suitable interfaces
+        if (beanInterfaces.length == 0 || beanInterfaces == null) {
+          Enhancer enhancer = new Enhancer();
+          enhancer.setSuperclass(bean.getClass());
+          enhancer.setCallbackType(OblivionCglibInterceptor.class);
+          Class<?> proxyClass = enhancer.createClass();
+          Objenesis objenesis = new ObjenesisStd();
+          ObjectInstantiator<?> instantiator = objenesis.getInstantiatorOf(proxyClass);
+          Object proxyInstance = instantiator.newInstance();
+          ((Factory) proxyInstance)
+              .setCallback(0, new OblivionCglibInterceptor(bean, isClassLoggable));
+          return proxyInstance;
+        } else {
+          // jdk dynamic proxy for beans with suitable interfaces
+          OblivionInvocationHandler handler = new OblivionInvocationHandler(bean, isClassLoggable);
+          ClassLoader classLoader = bean.getClass().getClassLoader();
+          Object proxyInstance = Proxy.newProxyInstance(classLoader, beanInterfaces, handler);
+          return proxyInstance;
+        }
       }
     }
 

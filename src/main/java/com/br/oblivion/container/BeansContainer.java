@@ -36,6 +36,9 @@ public class BeansContainer {
   // classes loaded from oblivion.config
   public static Map<String, Class<?>> configBeans = new HashMap<>();
 
+  // AOP advices
+  public static Map<String, List<Method>> adviceBeforeMap = new ConcurrentHashMap<>();
+
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
   }

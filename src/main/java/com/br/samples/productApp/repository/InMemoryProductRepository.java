@@ -20,19 +20,19 @@ public class InMemoryProductRepository implements ProductRepository, TrackableRe
 
   @Override
   public void save(Product product) {
-    System.out.println("[MEM REPO] Saving product to memory: " + product);
+    // System.out.println("[MEM REPO] Saving product to memory: " + product);
     memoryStore.put(product.getId(), product);
   }
 
   @Override
   public Optional<Product> findById(String id) {
-    System.out.println("[MEM REPO] Finding product by ID in memory: " + id);
+    // System.out.println("[MEM REPO] Finding product by ID in memory: " + id);
     return Optional.ofNullable(memoryStore.get(id));
   }
 
   @Override
   public List<Product> findAll() {
-    System.out.println("[MEM REPO] Finding all products in memory.");
+    // System.out.println("[MEM REPO] Finding all products in memory.");
     return new ArrayList<>(memoryStore.values());
   }
 }

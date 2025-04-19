@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+// @OblivionAspect
 @OblivionService
 @OblivionPrototype
 public class DefaultProductService {
@@ -16,8 +17,9 @@ public class DefaultProductService {
   private final ProductRepository repository;
 
   public DefaultProductService(@OblivionQualifier(name = "DBREPO") ProductRepository repository) {
-    System.out.println(
-        "DefaultProductService created with repository: " + repository.getClass().getSimpleName());
+    // System.out.println(
+    //     "DefaultProductService created with repository: " +
+    // repository.getClass().getSimpleName());
     this.repository = repository;
   }
 
@@ -32,6 +34,13 @@ public class DefaultProductService {
     return repository.findById(id);
   }
 
+  // @OblivionBefore(target =
+  // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
+  public void beforeGetAllProducts() {
+    System.out.println("[BEFORE ADVICE! Logging before 'getAllProducts']");
+  }
+
+  // @OblivionLoggable
   public List<Product> getAllProducts() {
     return repository.findAll();
   }

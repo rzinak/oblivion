@@ -1,6 +1,5 @@
 package com.br.samples.productApp.cli;
 
-import com.br.oblivion.annotations.OblivionPostInitialization;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import com.br.samples.productApp.service.DefaultProductService;
@@ -14,14 +13,14 @@ public class ProductCLI {
   private final DefaultProductService productService;
   private final Scanner scanner;
 
-  @OblivionPostInitialization
-  public void t() {
-    System.out.println("running post init");
-  }
+  // @OblivionPostInitialization
+  // public void t() {
+  //   System.out.println("running post init");
+  // }
 
   public ProductCLI(DefaultProductService productService) {
-    System.out.println(
-        "ProductCLI created with service: " + productService.getClass().getSimpleName());
+    // System.out.println(
+    //     "ProductCLI created with service: " + productService.getClass().getSimpleName());
     this.productService = productService;
     this.scanner = new Scanner(System.in);
   }

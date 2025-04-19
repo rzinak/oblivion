@@ -1,11 +1,15 @@
 package com.br.oblivion.util;
 
+import com.br.oblivion.annotations.OblivionAspect;
+import com.br.oblivion.annotations.OblivionBefore;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,6 +38,21 @@ public class Inject {
 
       OblivionAopProxyCreator aopProxyCreator = new OblivionAopProxyCreator();
       beansContainer.postProcessorBeans.add(aopProxyCreator);
+
+      Set<Class<?>> adviceClasses =
+          scannedClasses.stream()
+              .filter(c -> c.isAnnotationPresent(OblivionAspect.class))
+              .collect(Collectors.toSet());
+
+      for (Class<?> ac : adviceClasses) {
+        Method[] methods = ac.getDeclaredMethods();
+        for (Method m : methods) {
+          if (m.isAnnotationPresent(OblivionBefore.class)) {
+            String runBefore = m.getAnnotation(OblivionBefore.class).target();
+            BeansContainer.adviceBeforeMap.put(runBefore, List.of(m));
+          }
+        }
+      }
 
       for (Class<?> postProcessorClass : postProcessorClasses) {
         beansContainer.resolveDependency(

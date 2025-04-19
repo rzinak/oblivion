@@ -1,9 +1,11 @@
 package com.br.oblivion.util;
 
 import com.br.oblivion.annotations.OblivionLoggable;
+import com.br.oblivion.container.BeansContainer;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 public class OblivionInvocationHandler implements InvocationHandler {
   private final Object originalTarget;
@@ -18,6 +20,16 @@ public class OblivionInvocationHandler implements InvocationHandler {
   public Object invoke(Object obj, Method method, Object[] args)
       throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
     try {
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+
+      if (BeansContainer.adviceBeforeMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.adviceBeforeMap.get(currentMethod);
+
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
+
       Method originalMethod =
           this.originalTarget.getClass().getMethod(method.getName(), method.getParameterTypes());
 
