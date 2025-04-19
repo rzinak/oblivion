@@ -1,12 +1,5 @@
 package com.br.samples.productApp.service;
 
-import com.br.oblivion.annotations.OblivionLoggable;
-import com.br.oblivion.annotations.OblivionPostConstruct;
-import com.br.oblivion.annotations.OblivionPostInitialization;
-import com.br.oblivion.annotations.OblivionPostShutdown;
-import com.br.oblivion.annotations.OblivionPreDestroy;
-import com.br.oblivion.annotations.OblivionPreInitialization;
-import com.br.oblivion.annotations.OblivionPreShutdown;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
@@ -18,7 +11,6 @@ import java.util.UUID;
 
 @OblivionService
 @OblivionPrototype
-@OblivionLoggable
 public class DefaultProductService {
 
   private final ProductRepository repository;
@@ -27,36 +19,6 @@ public class DefaultProductService {
     System.out.println(
         "DefaultProductService created with repository: " + repository.getClass().getSimpleName());
     this.repository = repository;
-  }
-
-  @OblivionPreInitialization
-  public static void a() {
-    System.out.println("OblivionPreInitialization");
-  }
-
-  @OblivionPostConstruct
-  public void b() {
-    System.out.println("OblivionPostConstruct");
-  }
-
-  @OblivionPostInitialization
-  public void c() {
-    System.out.println("OblivionPostInitialization");
-  }
-
-  @OblivionPreDestroy
-  public void d() {
-    System.out.println("OblivionPreDestroy");
-  }
-
-  @OblivionPreShutdown
-  public void e() {
-    System.out.println("OblivionPreShutdown");
-  }
-
-  @OblivionPostShutdown
-  public void f() {
-    System.out.println("OblivionPostShutdown");
   }
 
   public Product createProduct(String name) {

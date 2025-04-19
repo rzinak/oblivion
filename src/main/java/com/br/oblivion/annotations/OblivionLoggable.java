@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 // used in proxy, intercept methods and just log stuff for now
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface OblivionLoggable {
   public String name() default "";
 }
