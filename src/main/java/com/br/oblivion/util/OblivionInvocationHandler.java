@@ -43,6 +43,13 @@ public class OblivionInvocationHandler implements InvocationHandler {
         System.out.println("[PROXY] finished method -> " + method.getName());
       }
 
+      if (BeansContainer.afterReturningAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterReturningAdviceMap.get(currentMethod);
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
+
       return result;
     } catch (Throwable t) {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();

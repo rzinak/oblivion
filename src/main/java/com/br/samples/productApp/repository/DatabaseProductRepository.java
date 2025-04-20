@@ -1,5 +1,8 @@
 package com.br.samples.productApp.repository;
 
+import com.br.oblivion.annotations.OblivionAfterReturning;
+import com.br.oblivion.annotations.OblivionAspect;
+import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import java.util.ArrayList;
@@ -8,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-// @OblivionAspect
+@OblivionAspect
 @OblivionService(name = "DBREPO")
 public class DatabaseProductRepository implements ProductRepository, TrackableRepository {
   private final Map<String, Product> database = new ConcurrentHashMap<>();
@@ -42,8 +45,13 @@ public class DatabaseProductRepository implements ProductRepository, TrackableRe
   //   System.out.println("[AFTER THROWING ADVICE! Logging after throwing 'findAll']");
   // }
 
+  @OblivionAfterReturning(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  public void afterReturningFindAll() {
+    System.out.println("[AFTER RETURNING ADVICE! Logging after returning 'findAll']");
+  }
+
   @Override
-  // @OblivionLoggable
+  @OblivionLoggable
   public List<Product> findAll() {
     System.out.println("[DB REPO] Finding all products in database.");
     // int x = 1 / 0; // just testing a throw for AfterThrowing
