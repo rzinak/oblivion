@@ -1,5 +1,8 @@
 package com.br.samples.productApp.service;
 
+import com.br.oblivion.annotations.OblivionAfterThrowing;
+import com.br.oblivion.annotations.OblivionAspect;
+import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
@@ -9,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// @OblivionAspect
+@OblivionAspect
 @OblivionService
 @OblivionPrototype
 public class DefaultProductService {
@@ -42,12 +45,19 @@ public class DefaultProductService {
 
   // @OblivionAfter(target =
   // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
-  public void beforeGetAllProducts() {
-    System.out.println("[AFTER ADVICE! Logging after 'getAllProducts']");
+  // public void afterGetAllProducts() {
+  //   System.out.println("[AFTER ADVICE! Logging after 'getAllProducts']");
+  // }
+
+  @OblivionAfterThrowing(
+      target = "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
+  public void afterThrowingGetAllProducts() {
+    System.out.println("[AFTER THROWING ADVICE! Logging after throwing 'getAllProducts']");
   }
 
-  // @OblivionLoggable
+  @OblivionLoggable
   public List<Product> getAllProducts() {
+    int x = 1 / 0; // just testing a throw for AfterThrowing
     return repository.findAll();
   }
 }

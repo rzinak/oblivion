@@ -39,6 +39,7 @@ public class BeansContainer {
   // AOP advices
   public static Map<String, List<Method>> beforeAdviceMap = new ConcurrentHashMap<>();
   public static Map<String, List<Method>> afterAdviceMap = new ConcurrentHashMap<>();
+  public static Map<String, List<Method>> afterThrowingAdviceMap = new ConcurrentHashMap<>();
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);

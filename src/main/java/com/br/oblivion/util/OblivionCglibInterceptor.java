@@ -42,7 +42,13 @@ public class OblivionCglibInterceptor implements MethodInterceptor {
 
       return result;
     } catch (Throwable t) {
-      System.out.println("[CGLIB PROXY] exception in method -> " + method.getName());
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+      if (BeansContainer.afterThrowingAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterThrowingAdviceMap.get(currentMethod);
+        for (Method m : methodsToCall) {
+          m.invoke(obj, args);
+        }
+      }
       throw t;
     } finally {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();

@@ -45,7 +45,13 @@ public class OblivionInvocationHandler implements InvocationHandler {
 
       return result;
     } catch (Throwable t) {
-      System.out.println("[PROXY] exception in method -> " + method.getName());
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+      if (BeansContainer.afterThrowingAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterThrowingAdviceMap.get(currentMethod);
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
       throw t;
     } finally {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
