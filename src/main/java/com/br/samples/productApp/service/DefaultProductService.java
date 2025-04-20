@@ -36,8 +36,14 @@ public class DefaultProductService {
 
   // @OblivionBefore(target =
   // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
+  // public void beforeGetAllProducts() {
+  //   System.out.println("[BEFORE ADVICE! Logging before 'getAllProducts']");
+  // }
+
+  // @OblivionAfter(target =
+  // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
   public void beforeGetAllProducts() {
-    System.out.println("[BEFORE ADVICE! Logging before 'getAllProducts']");
+    System.out.println("[AFTER ADVICE! Logging after 'getAllProducts']");
   }
 
   // @OblivionLoggable

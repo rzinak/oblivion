@@ -1,5 +1,6 @@
 package com.br.oblivion.util;
 
+import com.br.oblivion.annotations.OblivionAfter;
 import com.br.oblivion.annotations.OblivionAspect;
 import com.br.oblivion.annotations.OblivionBefore;
 import com.br.oblivion.annotations.OblivionPrototype;
@@ -49,7 +50,11 @@ public class Inject {
         for (Method m : methods) {
           if (m.isAnnotationPresent(OblivionBefore.class)) {
             String runBefore = m.getAnnotation(OblivionBefore.class).target();
-            BeansContainer.adviceBeforeMap.put(runBefore, List.of(m));
+            BeansContainer.beforeAdviceMap.put(runBefore, List.of(m));
+          }
+          if (m.isAnnotationPresent(OblivionAfter.class)) {
+            String runAfter = m.getAnnotation(OblivionAfter.class).target();
+            BeansContainer.afterAdviceMap.put(runAfter, List.of(m));
           }
         }
       }

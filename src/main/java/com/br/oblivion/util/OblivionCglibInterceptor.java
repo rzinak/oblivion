@@ -22,8 +22,8 @@ public class OblivionCglibInterceptor implements MethodInterceptor {
     try {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
 
-      if (BeansContainer.adviceBeforeMap.containsKey(currentMethod)) {
-        List<Method> methodsToCall = BeansContainer.adviceBeforeMap.get(currentMethod);
+      if (BeansContainer.beforeAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.beforeAdviceMap.get(currentMethod);
 
         for (Method m : methodsToCall) {
           m.invoke(obj, args);
@@ -44,6 +44,15 @@ public class OblivionCglibInterceptor implements MethodInterceptor {
     } catch (Throwable t) {
       System.out.println("[CGLIB PROXY] exception in method -> " + method.getName());
       throw t;
+    } finally {
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+      if (BeansContainer.afterAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterAdviceMap.get(currentMethod);
+
+        for (Method m : methodsToCall) {
+          m.invoke(obj, args);
+        }
+      }
     }
   }
 }

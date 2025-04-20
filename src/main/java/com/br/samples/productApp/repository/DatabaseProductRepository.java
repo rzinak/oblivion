@@ -1,7 +1,7 @@
 package com.br.samples.productApp.repository;
 
+import com.br.oblivion.annotations.OblivionAfter;
 import com.br.oblivion.annotations.OblivionAspect;
-import com.br.oblivion.annotations.OblivionBefore;
 import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
@@ -29,9 +29,14 @@ public class DatabaseProductRepository implements ProductRepository, TrackableRe
   }
 
   // when its an implementation of an interface, we target the method in the repository
-  @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  // @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  // public void beforeFindAll() {
+  //   System.out.println("[PROXY BEFORE] LOGGING BEFORE findAll");
+  // }
+
+  @OblivionAfter(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
   public void beforeFindAll() {
-    System.out.println("[PROXY BEFORE] LOGGING BEFORE findAll");
+    System.out.println("[AFTER ADVICE! Logging after 'findAll']");
   }
 
   @Override
