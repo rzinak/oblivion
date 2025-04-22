@@ -26,7 +26,11 @@ public class OblivionInvocationHandler implements InvocationHandler {
         List<Method> methodsToCall = BeansContainer.beforeAdviceMap.get(currentMethod);
 
         for (Method m : methodsToCall) {
-          m.invoke(this.originalTarget, args);
+          if (m.getParameterCount() == 0) {
+            m.invoke(this.originalTarget);
+          } else {
+            m.invoke(this.originalTarget, args);
+          }
         }
       }
 

@@ -12,6 +12,7 @@ import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,27 +48,63 @@ public class Inject {
               .filter(c -> c.isAnnotationPresent(OblivionAspect.class))
               .collect(Collectors.toSet());
 
+      String targetMethod = null;
+
       for (Class<?> ac : adviceClasses) {
         Method[] methods = ac.getDeclaredMethods();
         for (Method m : methods) {
           if (m.isAnnotationPresent(OblivionBefore.class)) {
-            String runBefore = m.getAnnotation(OblivionBefore.class).target();
-            BeansContainer.beforeAdviceMap.put(runBefore, List.of(m));
+            targetMethod = m.getAnnotation(OblivionBefore.class).target();
+
+            if (BeansContainer.beforeAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods = BeansContainer.beforeAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.beforeAdviceMap.put(targetMethod, methodToAdd);
+            }
           }
 
           if (m.isAnnotationPresent(OblivionAfter.class)) {
-            String runAfter = m.getAnnotation(OblivionAfter.class).target();
-            BeansContainer.afterAdviceMap.put(runAfter, List.of(m));
+            targetMethod = m.getAnnotation(OblivionAfter.class).target();
+
+            if (BeansContainer.afterAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods = BeansContainer.afterAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterAdviceMap.put(targetMethod, methodToAdd);
+            }
           }
 
           if (m.isAnnotationPresent(OblivionAfterThrowing.class)) {
-            String runAfterThrowing = m.getAnnotation(OblivionAfterThrowing.class).target();
-            BeansContainer.afterThrowingAdviceMap.put(runAfterThrowing, List.of(m));
+            targetMethod = m.getAnnotation(OblivionAfterThrowing.class).target();
+
+            if (BeansContainer.afterThrowingAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods =
+                  BeansContainer.afterThrowingAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterThrowingAdviceMap.put(targetMethod, methodToAdd);
+            }
           }
 
           if (m.isAnnotationPresent(OblivionAfterReturning.class)) {
-            String runAfterReturning = m.getAnnotation(OblivionAfterReturning.class).target();
-            BeansContainer.afterReturningAdviceMap.put(runAfterReturning, List.of(m));
+            targetMethod = m.getAnnotation(OblivionAfterReturning.class).target();
+
+            if (BeansContainer.afterReturningAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods =
+                  BeansContainer.afterReturningAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterReturningAdviceMap.put(targetMethod, methodToAdd);
+            }
           }
         }
       }
