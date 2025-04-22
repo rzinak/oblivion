@@ -12,7 +12,7 @@ public class RepositoryMetricsService {
 
   // its called by BeanPostProcessor to register a repository
   public void registerRepository(String beanName) {
-    System.out.println("[METRICS SERVICE] registering repository for tracking -> " + beanName);
+    // System.out.println("[METRICS SERVICE] registering repository for tracking -> " + beanName);
     saveCounts.putIfAbsent(beanName, new AtomicInteger(0));
     findCounts.putIfAbsent(beanName, new AtomicInteger(0));
   }

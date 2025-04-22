@@ -1,6 +1,6 @@
 package com.br.samples.productApp.cli;
 
-import com.br.oblivion.annotations.OblivionPostInitialization;
+import com.br.oblivion.annotations.OblivionAspect;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import com.br.samples.productApp.service.DefaultProductService;
@@ -8,23 +8,29 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+@OblivionAspect
 @OblivionService
 public class ProductCLI {
 
   private final DefaultProductService productService;
   private final Scanner scanner;
 
-  @OblivionPostInitialization
-  public void t() {
-    System.out.println("running post init");
-  }
+  // @OblivionPostInitialization
+  // public void t() {
+  //   System.out.println("running post init");
+  // }
 
   public ProductCLI(DefaultProductService productService) {
-    System.out.println(
-        "ProductCLI created with service: " + productService.getClass().getSimpleName());
+    // System.out.println(
+    //     "ProductCLI created with service: " + productService.getClass().getSimpleName());
     this.productService = productService;
     this.scanner = new Scanner(System.in);
   }
+
+  // @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.save")
+  // public void beforeOut() {
+  //   System.out.println("BEFORE SAVE, BUT CALLED FROM OUTSIDE");
+  // }
 
   public void run() {
     System.out.println("\n--- Product Management ---");

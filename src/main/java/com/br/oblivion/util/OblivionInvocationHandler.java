@@ -1,9 +1,11 @@
 package com.br.oblivion.util;
 
 import com.br.oblivion.annotations.OblivionLoggable;
+import com.br.oblivion.container.BeansContainer;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 public class OblivionInvocationHandler implements InvocationHandler {
   private final Object originalTarget;
@@ -18,6 +20,20 @@ public class OblivionInvocationHandler implements InvocationHandler {
   public Object invoke(Object obj, Method method, Object[] args)
       throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
     try {
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+
+      if (BeansContainer.beforeAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.beforeAdviceMap.get(currentMethod);
+
+        for (Method m : methodsToCall) {
+          if (m.getParameterCount() == 0) {
+            m.invoke(this.originalTarget);
+          } else {
+            m.invoke(this.originalTarget, args);
+          }
+        }
+      }
+
       Method originalMethod =
           this.originalTarget.getClass().getMethod(method.getName(), method.getParameterTypes());
 
@@ -31,10 +47,32 @@ public class OblivionInvocationHandler implements InvocationHandler {
         System.out.println("[PROXY] finished method -> " + method.getName());
       }
 
+      if (BeansContainer.afterReturningAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterReturningAdviceMap.get(currentMethod);
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
+
       return result;
     } catch (Throwable t) {
-      System.out.println("[PROXY] exception in method -> " + method.getName());
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+      if (BeansContainer.afterThrowingAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterThrowingAdviceMap.get(currentMethod);
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
       throw t;
+    } finally {
+      String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
+      if (BeansContainer.afterAdviceMap.containsKey(currentMethod)) {
+        List<Method> methodsToCall = BeansContainer.afterAdviceMap.get(currentMethod);
+
+        for (Method m : methodsToCall) {
+          m.invoke(this.originalTarget, args);
+        }
+      }
     }
   }
 }

@@ -474,11 +474,82 @@ public Object invokeOrIntercept(Object proxy, Method method, Object[] args, /* M
 
 So when methods are called on beans marked with `@OblivionLoggable`, you'll see `[PROXY]` or `[CGLIB PROXY]` log messages, demonstrating interception via the correct proxy type.
 
+**AOP Advice Types**
+
+Building upon the proxy mechanism, Oblivion supports several types of AOP advice, allowing you to execute custom logic at different points relative to the intercepted method call.
+
+1. **Defining Aspects and Advice**:
+
+- Create a class and mark it with `@OblivionAspect`. This class should also typically be an `@OblivionService`, so the container manages it.
+- Inside the Aspect class, write methods that contain the advice logic.
+- Annotate these advice methods with one of the Oblivion advice annotations (`@OblivionBefore`, `@OblivionAfter`, `@OblivionAfterReturning`, `@OblivionAfterThrowing`).
+- Use the target attribute within the advice annotation to specify the fully qualified name of the method you want to intercept (g.g. "com.br.myapp.MyService.doSomething").
+
+```java
+// Example Aspect Bean
+@OblivionAspect
+@OblivionService
+public class MyLoggingAspect {
+  // Runs BEFORE the target method
+  @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.save")
+  public void logBeforeSave() {
+    System.out.println("[ASPECT LOG] Attempting to save...");
+  }
+
+  // Runs AFTER the target method returns successfully
+  @OblivionAfterReturning(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  public void logAfterFindAllSuccess() {
+    System.out.println("[ASPECT LOG] findAll completed successfully.");
+    // Note: Cannot access return value with this simple implementation yet.
+  }
+
+  // Runs AFTER the target method throws an exception
+  @OblivionAfterThrowing(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  public void logAfterFindAllError() {
+    System.out.println("[ASPECT LOG] findAll threw an exception!");
+    // Note: Cannot access exception object with this simple implementation yet.
+  }
+
+  // Runs AFTER the target method finishes, regardless of outcome (like finally)
+  @OblivionAfter(target = "com.br.samples.productApp.repository.ProductRepository.findAll")
+  public void cleanupAfterFindAll() {
+    System.out.println("[ASPECT LOG] findAll execution finished (success or fail).");
+  }
+}
+```
+
+2. **Framework Handling**:
+
+- During startup, Oblivion scans for `@OblivionAspect` beans.
+- It reads the advice annotations (`@OblivionBefore`, etc) on the methods within those aspects.
+- It builds internal maps associating the target method strings with the corresponding advice methods.
+
+3. **Execution**:
+
+- When a proxied method (on a bean targeted by advice) is called at runtime:
+  - The proxy's InvocationHandler or MethodInterceptor intercepts the call.
+  - It checks the internal maps using the target method's name.
+  - It invokes the appropriate advice methods from the Aspect bean(s) at the correct time:
+    - `@OblivionBefore` advice runs before the original method.
+    - The original method is invoked.
+    - `@OblivionAfterReturning` or `@OblivionAfterThrowing` advice runs depending on the outcome.
+    - `@OblivionAfter` advice runs in a finally-like block.
+
+**Current Implementation Notes**:
+
+- Advice methods are currently invoked simply using reflection. Passing contextual information (like method arguments, or the exception thrown) to the advice method is not yet supported but will eventually be done :)
+- The target method is identified by its fully qualified string name, advanced Pointcut expressions will be added later as well.
+
 ---
 
 ### Currently working on
 
-- **AOP Integration** -> *Partially done! Working on Advice Execution*
+- **AOP Integration**
+
+  - JoinPoints;
+  - Allow Advice Calls from Outside the "Callable Methods";
+  - Advanced Pointcut Expressions;
+  
 - **Bean Definition Manipulation**
 
 ### Future work (maybe)

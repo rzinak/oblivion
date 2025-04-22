@@ -1,11 +1,19 @@
 package com.br.oblivion.util;
 
+import com.br.oblivion.annotations.OblivionAfter;
+import com.br.oblivion.annotations.OblivionAfterReturning;
+import com.br.oblivion.annotations.OblivionAfterThrowing;
+import com.br.oblivion.annotations.OblivionAspect;
+import com.br.oblivion.annotations.OblivionBefore;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,6 +42,72 @@ public class Inject {
 
       OblivionAopProxyCreator aopProxyCreator = new OblivionAopProxyCreator();
       beansContainer.postProcessorBeans.add(aopProxyCreator);
+
+      Set<Class<?>> adviceClasses =
+          scannedClasses.stream()
+              .filter(c -> c.isAnnotationPresent(OblivionAspect.class))
+              .collect(Collectors.toSet());
+
+      String targetMethod = null;
+
+      for (Class<?> ac : adviceClasses) {
+        Method[] methods = ac.getDeclaredMethods();
+        for (Method m : methods) {
+          if (m.isAnnotationPresent(OblivionBefore.class)) {
+            targetMethod = m.getAnnotation(OblivionBefore.class).target();
+
+            if (BeansContainer.beforeAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods = BeansContainer.beforeAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.beforeAdviceMap.put(targetMethod, methodToAdd);
+            }
+          }
+
+          if (m.isAnnotationPresent(OblivionAfter.class)) {
+            targetMethod = m.getAnnotation(OblivionAfter.class).target();
+
+            if (BeansContainer.afterAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods = BeansContainer.afterAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterAdviceMap.put(targetMethod, methodToAdd);
+            }
+          }
+
+          if (m.isAnnotationPresent(OblivionAfterThrowing.class)) {
+            targetMethod = m.getAnnotation(OblivionAfterThrowing.class).target();
+
+            if (BeansContainer.afterThrowingAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods =
+                  BeansContainer.afterThrowingAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterThrowingAdviceMap.put(targetMethod, methodToAdd);
+            }
+          }
+
+          if (m.isAnnotationPresent(OblivionAfterReturning.class)) {
+            targetMethod = m.getAnnotation(OblivionAfterReturning.class).target();
+
+            if (BeansContainer.afterReturningAdviceMap.containsKey(targetMethod)) {
+              List<Method> existingMethods =
+                  BeansContainer.afterReturningAdviceMap.get(targetMethod);
+              existingMethods.add(m);
+            } else {
+              List<Method> methodToAdd = new ArrayList<>();
+              methodToAdd.add(m);
+              BeansContainer.afterReturningAdviceMap.put(targetMethod, methodToAdd);
+            }
+          }
+        }
+      }
 
       for (Class<?> postProcessorClass : postProcessorClasses) {
         beansContainer.resolveDependency(
