@@ -9,6 +9,7 @@ import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.oblivion.annotations.OblivionWire;
 import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.container.Pair;
 import com.br.oblivion.interfaces.OblivionBeanPostProcessor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -57,12 +58,21 @@ public class Inject {
             targetMethod = m.getAnnotation(OblivionBefore.class).target();
 
             if (BeansContainer.beforeAdviceMap.containsKey(targetMethod)) {
-              List<Method> existingMethods = BeansContainer.beforeAdviceMap.get(targetMethod);
-              existingMethods.add(m);
+              List<Pair<Method, Object>> existingMethods =
+                  BeansContainer.beforeAdviceMap.get(targetMethod);
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pair = new Pair<Method, Object>(m, aspectInstance);
+              existingMethods.add(pair);
             } else {
-              List<Method> methodToAdd = new ArrayList<>();
-              methodToAdd.add(m);
-              BeansContainer.beforeAdviceMap.put(targetMethod, methodToAdd);
+              List<Pair<Method, Object>> pairList = new ArrayList<>();
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pairToAdd = new Pair<Method, Object>(m, aspectInstance);
+              pairList.add(pairToAdd);
+              BeansContainer.beforeAdviceMap.put(targetMethod, pairList);
             }
           }
 
@@ -70,12 +80,21 @@ public class Inject {
             targetMethod = m.getAnnotation(OblivionAfter.class).target();
 
             if (BeansContainer.afterAdviceMap.containsKey(targetMethod)) {
-              List<Method> existingMethods = BeansContainer.afterAdviceMap.get(targetMethod);
-              existingMethods.add(m);
+              List<Pair<Method, Object>> existingMethods =
+                  BeansContainer.afterAdviceMap.get(targetMethod);
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pair = new Pair<Method, Object>(m, aspectInstance);
+              existingMethods.add(pair);
             } else {
-              List<Method> methodToAdd = new ArrayList<>();
-              methodToAdd.add(m);
-              BeansContainer.afterAdviceMap.put(targetMethod, methodToAdd);
+              List<Pair<Method, Object>> pairList = new ArrayList<>();
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pairToAdd = new Pair<Method, Object>(m, aspectInstance);
+              pairList.add(pairToAdd);
+              BeansContainer.afterAdviceMap.put(targetMethod, pairList);
             }
           }
 
@@ -83,13 +102,21 @@ public class Inject {
             targetMethod = m.getAnnotation(OblivionAfterThrowing.class).target();
 
             if (BeansContainer.afterThrowingAdviceMap.containsKey(targetMethod)) {
-              List<Method> existingMethods =
+              List<Pair<Method, Object>> existingMethods =
                   BeansContainer.afterThrowingAdviceMap.get(targetMethod);
-              existingMethods.add(m);
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pair = new Pair<Method, Object>(m, aspectInstance);
+              existingMethods.add(pair);
             } else {
-              List<Method> methodToAdd = new ArrayList<>();
-              methodToAdd.add(m);
-              BeansContainer.afterThrowingAdviceMap.put(targetMethod, methodToAdd);
+              List<Pair<Method, Object>> pairList = new ArrayList<>();
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pairToAdd = new Pair<Method, Object>(m, aspectInstance);
+              pairList.add(pairToAdd);
+              BeansContainer.afterThrowingAdviceMap.put(targetMethod, pairList);
             }
           }
 
@@ -97,13 +124,21 @@ public class Inject {
             targetMethod = m.getAnnotation(OblivionAfterReturning.class).target();
 
             if (BeansContainer.afterReturningAdviceMap.containsKey(targetMethod)) {
-              List<Method> existingMethods =
+              List<Pair<Method, Object>> existingMethods =
                   BeansContainer.afterReturningAdviceMap.get(targetMethod);
-              existingMethods.add(m);
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, scannedClasses, null, false);
+              Pair<Method, Object> pair = new Pair<Method, Object>(m, aspectInstance);
+              existingMethods.add(pair);
             } else {
-              List<Method> methodToAdd = new ArrayList<>();
-              methodToAdd.add(m);
-              BeansContainer.afterReturningAdviceMap.put(targetMethod, methodToAdd);
+              List<Pair<Method, Object>> pairList = new ArrayList<>();
+              Object aspectInstance =
+                  beansContainer.resolveDependency(
+                      ac, ac.getName(), threadPoolExecutor, adviceClasses, null, false);
+              Pair<Method, Object> pairToAdd = new Pair<Method, Object>(m, aspectInstance);
+              pairList.add(pairToAdd);
+              BeansContainer.afterReturningAdviceMap.put(targetMethod, pairList);
             }
           }
         }

@@ -37,10 +37,12 @@ public class BeansContainer {
   public static Map<String, Class<?>> configBeans = new HashMap<>();
 
   // AOP advices
-  public static Map<String, List<Method>> beforeAdviceMap = new ConcurrentHashMap<>();
-  public static Map<String, List<Method>> afterAdviceMap = new ConcurrentHashMap<>();
-  public static Map<String, List<Method>> afterThrowingAdviceMap = new ConcurrentHashMap<>();
-  public static Map<String, List<Method>> afterReturningAdviceMap = new ConcurrentHashMap<>();
+  public static Map<String, List<Pair<Method, Object>>> beforeAdviceMap = new ConcurrentHashMap<>();
+  public static Map<String, List<Pair<Method, Object>>> afterAdviceMap = new ConcurrentHashMap<>();
+  public static Map<String, List<Pair<Method, Object>>> afterThrowingAdviceMap =
+      new ConcurrentHashMap<>();
+  public static Map<String, List<Pair<Method, Object>>> afterReturningAdviceMap =
+      new ConcurrentHashMap<>();
 
   public <T> void registerSingletonBean(String identifier, T bean) {
     singletonBeans.put(identifier, bean);
