@@ -1,5 +1,8 @@
 package com.br.samples.productApp.service;
 
+import com.br.oblivion.annotations.OblivionAspect;
+import com.br.oblivion.annotations.OblivionBefore;
+import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
@@ -9,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// @OblivionAspect
+@OblivionAspect
 @OblivionService
 @OblivionPrototype
 public class DefaultProductService {
@@ -34,11 +37,15 @@ public class DefaultProductService {
     return repository.findById(id);
   }
 
-  // @OblivionBefore(target =
-  // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
-  // public void beforeGetAllProducts() {
-  //   System.out.println("[BEFORE ADVICE! Logging before 'getAllProducts']");
-  // }
+  @OblivionLoggable
+  public static void show() {
+    System.out.println("CALLING SHOW");
+  }
+
+  @OblivionBefore(target = "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
+  public void beforeGetAllProducts() {
+    System.out.println("NO INTERFACE ** [BEFORE ADVICE! Logging before 'getAllProducts']");
+  }
 
   // @OblivionAfter(target =
   // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
@@ -58,7 +65,7 @@ public class DefaultProductService {
   //   System.out.println("[AFTER RETURNING ADVICE! Logging after returning 'getAllProducts']");
   // }
 
-  // @OblivionLoggable
+  @OblivionLoggable
   public List<Product> getAllProducts() {
     // int x = 1 / 0; // just testing a throw for AfterThrowing
     return repository.findAll();

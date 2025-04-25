@@ -2,12 +2,14 @@ package com.br.oblivion.util;
 
 import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.container.BeansContainer;
+import com.br.oblivion.container.Pair;
+import com.br.oblivion.interfaces.TargetAware;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-public class OblivionInvocationHandler implements InvocationHandler {
+public class OblivionInvocationHandler implements InvocationHandler, TargetAware {
   private final Object originalTarget;
   private boolean isClassLoggable;
 
@@ -20,16 +22,36 @@ public class OblivionInvocationHandler implements InvocationHandler {
   public Object invoke(Object obj, Method method, Object[] args)
       throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
     try {
+      // if it starts throwing that illegal argument exception saying the object is wrong when
+      // calling the method, despite the object being correct, its most likely because the
+      // getOblivionTargetInstance is also being intercepted...
+      // i was having this problem with CGLIB but never had it with JDK Proxies, but i'm leaving
+      // this comment here in case i also have it here, so i dont have to waster 2 more hours trying
+      // to figure it out
+      // if (method.getName().equals("getOblivionTargetInstance") && method.getParameterCount() ==
+      // 0) {
+      //         return getOblivionTargetInstance();
+      //       }
+
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
 
       if (BeansContainer.beforeAdviceMap.containsKey(currentMethod)) {
-        List<Method> methodsToCall = BeansContainer.beforeAdviceMap.get(currentMethod);
+        List<Pair<Method, Object>> methodPair = BeansContainer.beforeAdviceMap.get(currentMethod);
+        for (Pair<Method, Object> pair : methodPair) {
+          Method adviceMethod = pair.getL();
+          Object aspectInstance = pair.getR();
+          Object targetToInvoke = null;
 
-        for (Method m : methodsToCall) {
-          if (m.getParameterCount() == 0) {
-            m.invoke(this.originalTarget);
+          if (aspectInstance instanceof TargetAware) {
+            targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
           } else {
-            m.invoke(this.originalTarget, args);
+            targetToInvoke = aspectInstance;
+          }
+
+          if (adviceMethod.getParameterCount() == 0) {
+            adviceMethod.invoke(targetToInvoke);
+          } else {
+            adviceMethod.invoke(targetToInvoke, args);
           }
         }
       }
@@ -48,9 +70,24 @@ public class OblivionInvocationHandler implements InvocationHandler {
       }
 
       if (BeansContainer.afterReturningAdviceMap.containsKey(currentMethod)) {
-        List<Method> methodsToCall = BeansContainer.afterReturningAdviceMap.get(currentMethod);
-        for (Method m : methodsToCall) {
-          m.invoke(this.originalTarget, args);
+        List<Pair<Method, Object>> methodsToCall =
+            BeansContainer.afterReturningAdviceMap.get(currentMethod);
+        for (Pair<Method, Object> pair : methodsToCall) {
+          Method adviceMethod = pair.getL();
+          Object aspectInstance = pair.getR();
+          Object targetToInvoke = null;
+
+          if (aspectInstance instanceof TargetAware) {
+            targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
+          } else {
+            targetToInvoke = aspectInstance;
+          }
+
+          if (adviceMethod.getParameterCount() == 0) {
+            adviceMethod.invoke(targetToInvoke);
+          } else {
+            adviceMethod.invoke(targetToInvoke, args);
+          }
         }
       }
 
@@ -58,21 +95,55 @@ public class OblivionInvocationHandler implements InvocationHandler {
     } catch (Throwable t) {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
       if (BeansContainer.afterThrowingAdviceMap.containsKey(currentMethod)) {
-        List<Method> methodsToCall = BeansContainer.afterThrowingAdviceMap.get(currentMethod);
-        for (Method m : methodsToCall) {
-          m.invoke(this.originalTarget, args);
+        List<Pair<Method, Object>> methodsToCall =
+            BeansContainer.afterThrowingAdviceMap.get(currentMethod);
+        for (Pair<Method, Object> pair : methodsToCall) {
+          Method adviceMethod = pair.getL();
+          Object aspectInstance = pair.getR();
+          Object targetToInvoke = null;
+
+          if (aspectInstance instanceof TargetAware) {
+            targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
+          } else {
+            targetToInvoke = aspectInstance;
+          }
+
+          if (adviceMethod.getParameterCount() == 0) {
+            adviceMethod.invoke(targetToInvoke);
+          } else {
+            adviceMethod.invoke(targetToInvoke, args);
+          }
         }
       }
       throw t;
     } finally {
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
       if (BeansContainer.afterAdviceMap.containsKey(currentMethod)) {
-        List<Method> methodsToCall = BeansContainer.afterAdviceMap.get(currentMethod);
+        List<Pair<Method, Object>> methodsToCall = BeansContainer.afterAdviceMap.get(currentMethod);
 
-        for (Method m : methodsToCall) {
-          m.invoke(this.originalTarget, args);
+        for (Pair<Method, Object> pair : methodsToCall) {
+          Method adviceMethod = pair.getL();
+          Object aspectInstance = pair.getR();
+          Object targetToInvoke = null;
+
+          if (aspectInstance instanceof TargetAware) {
+            targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
+          } else {
+            targetToInvoke = aspectInstance;
+          }
+
+          if (adviceMethod.getParameterCount() == 0) {
+            adviceMethod.invoke(targetToInvoke);
+          } else {
+            adviceMethod.invoke(targetToInvoke, args);
+          }
         }
       }
     }
+  }
+
+  @Override
+  public Object getOblivionTargetInstance() {
+    return this.originalTarget;
   }
 }
