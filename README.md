@@ -547,7 +547,7 @@ public class MyLoggingAspect {
 - **AOP Integration**
 
   - JoinPoints;
-  - Allow Advice Calls from Outside the "Callable Methods";
+  - Allow Advice Calls from Outside the "Callable Methods"; **DONE :)**
   - Advanced Pointcut Expressions;
   
 - **Bean Definition Manipulation**
