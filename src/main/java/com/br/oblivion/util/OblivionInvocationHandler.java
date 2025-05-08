@@ -3,6 +3,7 @@ package com.br.oblivion.util;
 import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.container.Pair;
+import com.br.oblivion.interfaces.OblivionJoinPoint;
 import com.br.oblivion.interfaces.TargetAware;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -22,25 +23,22 @@ public class OblivionInvocationHandler implements InvocationHandler, TargetAware
   public Object invoke(Object obj, Method method, Object[] args)
       throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
     try {
-      // if it starts throwing that illegal argument exception saying the object is wrong when
-      // calling the method, despite the object being correct, its most likely because the
-      // getOblivionTargetInstance is also being intercepted...
-      // i was having this problem with CGLIB but never had it with JDK Proxies, but i'm leaving
-      // this comment here in case i also have it here, so i dont have to waster 2 more hours trying
-      // to figure it out
-      // if (method.getName().equals("getOblivionTargetInstance") && method.getParameterCount() ==
-      // 0) {
-      //         return getOblivionTargetInstance();
-      //       }
+      if (method.getName().equals("getOblivionTargetInstance") && method.getParameterCount() == 0) {
+        return getOblivionTargetInstance();
+      }
 
       String currentMethod = method.getDeclaringClass().getName() + "." + method.getName();
 
       if (BeansContainer.beforeAdviceMap.containsKey(currentMethod)) {
+        System.out.println("found method -> " + currentMethod + " inside beforeAdviceMap");
         List<Pair<Method, Object>> methodPair = BeansContainer.beforeAdviceMap.get(currentMethod);
         for (Pair<Method, Object> pair : methodPair) {
           Method adviceMethod = pair.getL();
           Object aspectInstance = pair.getR();
           Object targetToInvoke = null;
+
+          OblivionJoinPoint jp =
+              new MethodExecutionJoinPoint(this.originalTarget, obj, method, args);
 
           if (aspectInstance instanceof TargetAware) {
             targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
@@ -49,9 +47,9 @@ public class OblivionInvocationHandler implements InvocationHandler, TargetAware
           }
 
           if (adviceMethod.getParameterCount() == 0) {
-            adviceMethod.invoke(targetToInvoke);
+            adviceMethod.invoke(targetToInvoke, jp);
           } else {
-            adviceMethod.invoke(targetToInvoke, args);
+            adviceMethod.invoke(targetToInvoke, jp);
           }
         }
       }

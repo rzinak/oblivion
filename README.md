@@ -546,9 +546,10 @@ public class MyLoggingAspect {
 
 - **AOP Integration**
 
-  - JoinPoints;
+  - JoinPoints; - Working on this... **DONE :)**
   - Allow Advice Calls from Outside the "Callable Methods"; **DONE :)**
-  - Advanced Pointcut Expressions;
+  - Currently reviewing AOP features I added
+
   
 - **Bean Definition Manipulation**
 
@@ -563,3 +564,4 @@ public class MyLoggingAspect {
 - **Event Publishing/Listening** (this one is cool as hell, i think guava has this but wanna do my own... basically i think i could implement an application-wide event bus and use an annotation like `@OblivionEventPublisher` to publish custom event objects, and beans with `@OblivionEventListener` will get invoked when a specific type of event is published, and i already have sync/async in Oblivion, so i can use it as well... its cool because instead of a 'chain' of bean call, they would react independently)
 - **Add Support to JSR-330** (use standard DI annotations, to allow an easier integration with other libs using it)
 - **Factory Bean**
+- **Advanced Pointcut Expressions**

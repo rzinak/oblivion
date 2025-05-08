@@ -1,7 +1,6 @@
 package com.br.samples.productApp.cli;
 
 import com.br.oblivion.annotations.OblivionAspect;
-import com.br.oblivion.annotations.OblivionBefore;
 import com.br.oblivion.annotations.OblivionService;
 import com.br.samples.productApp.domain.Product;
 import com.br.samples.productApp.service.DefaultProductService;
@@ -28,15 +27,34 @@ public class ProductCLI {
     this.scanner = new Scanner(System.in);
   }
 
-  @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.save")
-  public void beforeOut() {
-    System.out.println("BEFORE SAVE, BUT CALLED FROM OUTSIDE");
-  }
+  // @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.save")
+  // public void beforeOut() {
+  //   System.out.println("BEFORE SAVE, CALLED FROM PRODUCTCLI");
+  // }
 
-  @OblivionBefore(target = "com.br.samples.productApp.service.DefaultProductService.show")
-  public void beforeShow() {
-    System.out.println("BEFORE SHOW, BUT CALLED FROM OUTSIDE");
-  }
+  // @OblivionBefore(target = "com.br.samples.productApp.repository.ProductRepository.save")
+  // // public void beforeSave(OblivionJoinPoint jp) {
+  // public void beforeSaveMod(OblivionJoinPoint jp) throws Exception {
+  //   Object[] args = jp.getArgs();
+  //   if (args != null && args.length > 0 && args[0] instanceof Product) {
+  //     Product productBeingSaved = (Product) args[0];
+  //     System.out.println(
+  //         "[MOD] => [ASPECT LOG] Attempting to save Product ID: "
+  //             + productBeingSaved.getId()
+  //             + ", product name is "
+  //             + productBeingSaved.getName());
+  //   }
+  //
+  //   Method method = jp.getMethod();
+  //   System.out.println("[MOD] => [ASPECT LOG] method -> " + method.getName());
+  //   Object target = jp.getTarget();
+  //   System.out.println("[MOD] => [ASPECT LOG] target -> " + target.getClass().getName());
+  // }
+
+  // @OblivionBefore(target = "com.br.samples.productApp.service.DefaultProductService.show")
+  // public void beforeShow() {
+  //   System.out.println("BEFORE SHOW, BUT CALLED FROM OUTSIDE");
+  // }
 
   public void run() {
     System.out.println("\n--- Product Management ---");

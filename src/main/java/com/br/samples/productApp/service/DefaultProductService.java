@@ -6,8 +6,10 @@ import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.annotations.OblivionPrototype;
 import com.br.oblivion.annotations.OblivionQualifier;
 import com.br.oblivion.annotations.OblivionService;
+import com.br.oblivion.interfaces.OblivionJoinPoint;
 import com.br.samples.productApp.domain.Product;
 import com.br.samples.productApp.repository.ProductRepository;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,12 +41,27 @@ public class DefaultProductService {
 
   @OblivionLoggable
   public static void show() {
-    System.out.println("CALLING SHOW");
+    // System.out.println("CALLING SHOW");
   }
 
-  @OblivionBefore(target = "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
-  public void beforeGetAllProducts() {
-    System.out.println("NO INTERFACE ** [BEFORE ADVICE! Logging before 'getAllProducts']");
+  // @OblivionBefore(target =
+  // "com.br.samples.productApp.service.DefaultProductService.getAllProducts")
+  // public void beforeGetAllProducts() {
+  //   System.out.println("NO INTERFACE ** [BEFORE ADVICE! Logging before 'getAllProducts']");
+  // }
+
+  @OblivionBefore(target = "com.br.samples.productApp.service.DefaultProductService.createProduct")
+  public void beforeSaveMod(OblivionJoinPoint jp) {
+    System.out.println("[MOD] [ASPECT LOG] => running...");
+    Object[] args = jp.getArgs();
+    if (args != null && args.length > 0) {
+      System.out.println("[ASPECT LOG] Attempting to save Product NAME: " + args[0]);
+    }
+
+    Method method = jp.getMethod();
+    System.out.println("[MOD] [ASPECT LOG] => method -> " + method.getName());
+    Object target = jp.getTarget();
+    System.out.println("[MOD] [ASPECT LOG] => target -> " + target.getClass().getName());
   }
 
   // @OblivionAfter(target =

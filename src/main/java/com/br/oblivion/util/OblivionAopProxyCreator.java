@@ -60,7 +60,6 @@ public class OblivionAopProxyCreator implements OblivionBeanPostProcessor {
         // jdk dynamic proxy for beans with suitable interfaces
         List<Class<?>> beanInterfacesList = new ArrayList<>(Arrays.asList(beanInterfaces));
         beanInterfacesList.add(TargetAware.class);
-
         Class<?>[] beanInterfacesAware = new Class<?>[beanInterfacesList.size()];
         beanInterfacesAware = beanInterfacesList.toArray(beanInterfacesAware);
         OblivionInvocationHandler handler = new OblivionInvocationHandler(bean, isClassLoggable);
