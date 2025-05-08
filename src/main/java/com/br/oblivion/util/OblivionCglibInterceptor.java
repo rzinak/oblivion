@@ -3,6 +3,7 @@ package com.br.oblivion.util;
 import com.br.oblivion.annotations.OblivionLoggable;
 import com.br.oblivion.container.BeansContainer;
 import com.br.oblivion.container.Pair;
+import com.br.oblivion.interfaces.OblivionJoinPoint;
 import com.br.oblivion.interfaces.TargetAware;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -35,6 +36,9 @@ public class OblivionCglibInterceptor implements MethodInterceptor, TargetAware 
           Object aspectInstance = pair.getR();
           Object targetToInvoke = null;
 
+          OblivionJoinPoint jp =
+              new MethodExecutionJoinPoint(this.originalTarget, obj, method, args);
+
           if (aspectInstance instanceof TargetAware) {
             targetToInvoke = ((TargetAware) aspectInstance).getOblivionTargetInstance();
           } else {
@@ -42,9 +46,9 @@ public class OblivionCglibInterceptor implements MethodInterceptor, TargetAware 
           }
 
           if (adviceMethod.getParameterCount() == 0) {
-            adviceMethod.invoke(targetToInvoke);
+            adviceMethod.invoke(targetToInvoke, jp);
           } else {
-            adviceMethod.invoke(targetToInvoke, args);
+            adviceMethod.invoke(targetToInvoke, jp);
           }
         }
       }
